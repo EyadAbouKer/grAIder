@@ -1,12 +1,18 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, request, jsonify
 from dotenv import load_dotenv
-import json
 import os
+from gemeniapi import query_gemini
 
 load_dotenv()  # Load environment variables from .env file
-api_key = os.getenv('API_KEY')
+api_key = os.getenv('GEMINI_API_KEY')
 
 app = Flask(__name__)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db/Student.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize SQLAlchemy
+db = SQLAlchemy(app)
 
 
 assignment = {
@@ -58,6 +64,27 @@ def grading_dashboard():
         student["escaped_solution"] = json.dumps(student["solution"])
 
     return render_template("grading_dashboard.html", assignment=assignment, test_cases=test_cases, students=students)
+
+@app.route("/query", methods=['GET', 'POST'])
+def query():
+    try:
+        # Handle both GET and POST requests
+        if request.method == 'GET':
+            prompt = "What is the capital of France?"  # Default prompt for GET requests
+        else:
+            data = request.get_json()
+            if not data or 'prompt' not in data:
+                return jsonify({"error": "No prompt provided"}), 400
+            prompt = data['prompt']
+            
+        response = query_gemini(prompt, api_key)
+        
+        if isinstance(response, dict) and 'error' in response:
+            return jsonify(response), 500
+            
+        return jsonify({"response": response})
+    except Exception as e:
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 
 @app.route("/run_code", methods=["POST"])
