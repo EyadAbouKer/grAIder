@@ -1,11 +1,12 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 import os
+from gemeniapi import query_gemini
 
 load_dotenv()  # Load environment variables from .env file
-api_key = os.getenv('API_KEY')
+api_key = os.getenv('GEMINI_API_KEY')
 
 app = Flask(__name__)
 
@@ -60,6 +61,26 @@ def grading_dashboard():
 
     return render_template("grading_dashboard.html", assignment=assignment, test_cases=test_cases, students=students)
 
+@app.route("/query", methods=['GET', 'POST'])
+def query():
+    try:
+        # Handle both GET and POST requests
+        if request.method == 'GET':
+            prompt = "What is the capital of France?"  # Default prompt for GET requests
+        else:
+            data = request.get_json()
+            if not data or 'prompt' not in data:
+                return jsonify({"error": "No prompt provided"}), 400
+            prompt = data['prompt']
+            
+        response = query_gemini(prompt, api_key)
+        
+        if isinstance(response, dict) and 'error' in response:
+            return jsonify(response), 500
+            
+        return jsonify({"response": response})
+    except Exception as e:
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 
 if __name__ == "__main__":
