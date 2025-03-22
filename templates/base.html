@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" class="transition-colors duration-300">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Flask Tailwind Project{% endblock %}</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Configure Tailwind to use class-based dark mode
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {},
+      },
+    }
+  </script>
+</head>
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
+  <!-- Dark Mode Toggle Button -->
+  <button id="dark-toggle" class="p-2 m-4 bg-gray-200 dark:bg-gray-700 rounded">
+    Toggle Dark Mode
+  </button>
+
+  {% block content %}{% endblock %}
+
+  <script>
+    // Toggle the "dark" class on the root element when the button is clicked
+    const toggleButton = document.getElementById('dark-toggle');
+    toggleButton.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+    });
+  </script>
+</body>
+</html>

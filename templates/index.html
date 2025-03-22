@@ -1,11 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flask App</title>
-</head>
-<body>
-    <h1>Welcome to Flask</h1>
-</body>
-</html> 
+{% extends "base.html" %}
+
+{% block title %}Home - Flask Tailwind Project{% endblock %}
+
+{% block content %}
+<div class="p-4">
+  <h1 class="text-2xl font-bold">Welcome to the Flask Tailwind Project</h1>
+  <p class="mt-2">
+    This page supports both dark and light modes using Tailwind CSS.
+  </p>
+</div>
+{% endblock %}
