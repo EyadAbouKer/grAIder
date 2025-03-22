@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 import os
-from gemeniapi import query_gemini
+from gemeniapi import query_gemini, studentEvaluator
 
 load_dotenv()  # Load environment variables from .env file
 api_key = os.getenv('GEMINI_API_KEY')
@@ -50,15 +50,23 @@ def grading_dashboard():
         {"name": "Ian", "solution": "def sum_even(numbers):\n    if not numbers:\n        return 0\n    head = numbers[0]\n    tail = numbers[1:]\n    if head % 2 == 0:\n        return head + sum_even(tail)\n    else:\n        return sum_even(tail)", "correct": True, "annotation": "Correct recursive solution."},
         {"name": "Julia", "solution": "def sum_even(numbers):\n    total = 0\n    for num in numbers:\n        # This condition is intended to check evenness but is flawed.\n        if (num / 2) % 2 == 0:\n            total += num\n    return total", "correct": False, "annotation": "Faulty condition using division leads to wrong results."}
     ]
-
+    
+    #evaluate the students solutions based on the assignment
+    studentEvaluator(students, assignment, api_key)
+    # print(evaluations[0])
+    
+    # return render_template("grading_dashboard.html", assignment=assignment, test_cases=test_cases, students=students, evaluations=evaluations[0])
     return render_template("grading_dashboard.html", assignment=assignment, test_cases=test_cases, students=students)
 
 @app.route("/query", methods=['GET', 'POST'])
 def query():
+    if not api_key:
+        return jsonify({"error": "API key not found. Please check your .env file."}), 500
+        
     try:
         # Handle both GET and POST requests
         if request.method == 'GET':
-            prompt = "What is the capital of France?"  # Default prompt for GET requests
+            prompt = "What is the capital of France?"  
         else:
             data = request.get_json()
             if not data or 'prompt' not in data:

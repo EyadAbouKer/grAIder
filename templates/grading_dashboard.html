@@ -55,6 +55,14 @@
             <pre class="bg-gray-100 dark:bg-gray-800 p-2 rounded text-sm">{{ student.solution }}</pre>
             <p class="text-sm text-gray-600 mt-2">{{ student.annotation }}</p>
           </div>
+        
+            <div>
+              <h4 class="text-lg font-medium mb-2">Evaluation</h4>
+              <pre class="bg-gray-100 dark:bg-gray-800 p-2 rounded text-sm">{{ student.evaluation }}</pre>
+              <h4 class="text-lg font-medium mb-2">Scores</h4>
+              <pre class="bg-gray-100 dark:bg-gray-800 p-2 rounded text-sm">{{ student.scores }}</pre>
+            </div>
+           
         </li>
         {% endfor %}
       </ul>
