@@ -1,0 +1,35 @@
+# Python-related
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environment
+venv/
+.env
+*.venv
+Pipfile.lock
+
+# Flask-specific
+instance/
+config.py
+.env
+
+# Logs and caches
+*.log
+*.sqlite3
+*.db
+*.pkl
+*.cache
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
