@@ -3,59 +3,60 @@
 {% block title %}Grading Dashboard{% endblock %}
 
 {% block content %}
-<!-- Overall container -->
-<div class="flex">
-  <!-- Left Section -->
-  <div class="w-1/3 border-r border-gray-200 dark:border-gray-700 p-4">
-    <!-- Assignment Description -->
-    <div class="mb-4">
-      <h2 class="text-xl font-semibold">Assignment: {{ assignment.title }}</h2>
-      <p class="mt-2 text-sm">{{ assignment.description }}</p>
-    </div>
-
-    <!-- Rubric -->
-    <div class="mb-4">
-      <h2 class="text-xl font-semibold">Rubric</h2>
-      <ul class="mt-2 list-disc list-inside text-sm">
-        {% for criterion, weight in assignment.rubric.items() %}
-        <li>{{ criterion }} ({{ weight }}%)</li>
-        {% endfor %}
-      </ul>
-    </div>
-
-    <!-- Test Cases -->
-    <div>
-      <h2 class="text-xl font-semibold">Test Cases</h2>
-      <ul class="mt-2 list-disc list-inside text-sm">
-        {% for test_case in test_cases %}
-        <li><strong>Input:</strong> {{ test_case.input }} | <strong>Expected:</strong> {{ test_case.expected }}</li>
-        {% endfor %}
-      </ul>
-    </div>
-  </div>
-
-  <!-- Right Section -->
-  <div class="w-2/3 p-4">
-    <!-- Grading Dashboard Header -->
-    <h2 class="text-2xl font-bold mb-4">Grading Dashboard</h2>
-
-    <!-- Student Solutions -->
-    <div>
-      <h3 class="text-lg font-medium mb-2">Student Solutions</h3>
-      <ul class="space-y-4">
-        {% for student in students %}
-        <li class="border rounded p-4 hover:shadow-lg transition-shadow duration-300">
-          <div class="flex justify-between items-center">
-            <h4 class="font-semibold">{{ student.name }} – {{ '✓ Correct' if student.correct else '✗ Incorrect' }}</h4>
-            <button class="text-blue-500 hover:underline" onclick="toggleCode('student-{{ loop.index }}', this)">
-              Show Solution
-            </button>
-          </div>
-          <div id="student-{{ loop.index }}" class="hidden mt-2 transition-all duration-300 overflow-hidden">
-            <pre class="bg-gray-100 dark:bg-gray-800 p-2 rounded text-sm">{{ student.solution }}</pre>
-            <p class="text-sm text-gray-600 mt-2">{{ student.annotation }}</p>
-          </div>
+<div class="container mx-auto p-4">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    
+    <!-- Top Left: Rubric Section -->
+    <div class="md:col-span-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg transform hover:scale-102 transition-all duration-300 overflow-hidden">
+      <div class="bg-blue-600 text-white p-1">
+        <h2 class="text-lg font-medium">Assignment: {{ assignment.title }}</h2>
+      </div>
+      <div class="p-4">
+        <p class="mb-4 text-sm">{{ assignment.description }}</p>
         
+        <h3 class="text-lg font-medium mb-2 border-b pb-2">Rubric</h3>
+        <ul class="space-y-2 text-sm">
+          {% for criterion, weight in assignment.rubric.items() %}
+          <li class="flex justify-between items-center">
+            <span>{{ criterion }}</span>
+            <span class="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full text-xs font-medium">{{ weight }}%</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <!-- Top Right: Students Section -->
+    <div class="md:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg h-96 flex flex-col overflow-hidden">
+      <div class="bg-green-600 text-white p-1">
+        <h2 class="text-lg font-medium">Student Solutions</h2>
+      </div>
+      <div class="p-4 overflow-y-auto flex-grow">
+        <ul class="space-y-4">
+          {% for student in students %}
+          <li class="border rounded-lg p-4 hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-700">
+            <div class="flex justify-between items-center">
+              <h4 class="font-medium flex items-center">
+                <span class="mr-2">{{ student.name }}</span>
+                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full {% if student.correct %}bg-green-100 text-green-600{% else %}bg-red-100 text-red-600{% endif %}">
+                  {% if student.correct %}✓{% else %}✗{% endif %}
+                </span>
+              </h4>
+              <button class="text-blue-500 hover:text-blue-700 hover:underline focus:outline-none transition-colors duration-300" 
+                      onclick="toggleCode('student-{{ loop.index }}', this)">
+                Show Solution
+              </button>
+            </div>
+            <div id="student-{{ loop.index }}" class="hidden mt-2 transition-all duration-500 overflow-hidden">
+              <pre class="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg text-sm border border-gray-200 dark:border-gray-600">{{ student.solution }}</pre>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mt-2 italic">{{ student.annotation }}</p>
+              <button class="mt-3 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors duration-300 transform hover:scale-105" 
+                      onclick="runCode('{{ student.name }}', 'result-{{ loop.index }}')">
+                Run Code
+              </button>
+              <div id="result-{{ loop.index }}" class="mt-2 text-sm"></div>
+            </div>
+          
             <div>
               <h4 class="text-lg font-medium mb-2">Evaluation</h4>
               <pre class="bg-gray-100 dark:bg-gray-800 p-2 rounded text-sm">{{ student.evaluation }}</pre>
@@ -64,51 +65,257 @@
             </div>
            
         </li>
-        {% endfor %}
-      </ul>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <!-- Bottom Left: Test Cases Section -->
+    <div class="md:col-span-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg transform hover:scale-102 transition-all duration-300 overflow-hidden">
+      <div class="bg-purple-600 text-white p-1">
+        <h2 class="text-lg font-medium">Test Cases</h2>
+      </div>
+      <div class="p-4 max-h-64 overflow-y-auto">
+        <ul class="space-y-2">
+          {% for test_case in test_cases %}
+          <li class="border-b pb-2 last:border-b-0">
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400">Input:</div>
+            <div class="bg-gray-100 dark:bg-gray-700 p-2 rounded mb-1 font-mono text-sm">{{ test_case.input }}</div>
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400">Expected:</div>
+            <div class="bg-gray-100 dark:bg-gray-700 p-2 rounded font-mono text-sm">{{ test_case.expected }}</div>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <!-- Bottom Right: Execution Results Section -->
+    <div class="md:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+      <div class="bg-amber-600 text-white p-1">
+        <h2 class="text-lg font-medium">Execution Results</h2>
+      </div>
+      <div id="results-container" class="p-4 max-h-64 overflow-y-auto">
+        <div id="results-output" class="mt-2">
+          <div class="flex items-center justify-center h-32 text-gray-400">
+            <div class="text-center">
+              <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path>
+              </svg>
+              <p>Run a student's code to see results here</p>
+            </div>
+          </div>
+          <!-- Debugging message -->
+          <p id="debug-message" class="text-red-500 hidden"></p>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
-  // Toggle visibility of student code and update button text
   function toggleCode(id, button) {
     const element = document.getElementById(id);
     if (element.classList.contains('hidden')) {
+      // Show the element with animation
       element.classList.remove('hidden');
-      element.style.maxHeight = element.scrollHeight + "px"; // Smooth expand
+      element.style.maxHeight = "0px";
+      setTimeout(() => {
+        element.style.maxHeight = element.scrollHeight + "px";
+      }, 10);
       button.textContent = "Hide Solution";
     } else {
-      element.style.maxHeight = "0"; // Smooth collapse
-      element.addEventListener('transitionend', () => element.classList.add('hidden'), { once: true });
+      // Hide the element with animation
+      element.style.maxHeight = "0px";
+      element.addEventListener('transitionend', () => {
+        element.classList.add('hidden');
+      }, { once: true });
       button.textContent = "Show Solution";
     }
   }
 
-  // Preserve dark mode across pages
-  document.addEventListener('DOMContentLoaded', () => {
-    const darkMode = localStorage.getItem('darkMode');
-    if (darkMode === 'enabled') {
-      document.documentElement.classList.add('dark');
+  async function runCode(studentName, resultId) {
+    const resultElement = document.getElementById(resultId);
+    const resultsContainer = document.getElementById("results-output");
+    const debugMessage = document.getElementById("debug-message");
+    
+    // Show loading animation
+    resultsContainer.innerHTML = `
+      <div class="flex items-center justify-center h-32">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    `;
+    resultElement.textContent = "Running...";
+    debugMessage.textContent = `Sending request to /run_code for student: ${studentName}`;
+    debugMessage.classList.remove('hidden');
+
+    try {
+      const response = await fetch("/run_code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ student_name: studentName })
+      });
+
+      console.log("Response received from backend:", response);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log("Parsed result from backend:", result);
+
+      resultElement.textContent = `Execution complete: ${result.passed} passed, ${result.failed} failed`;
+      
+      // Create animated results display
+      let detailsHTML = `
+        <div class="mb-4 flex items-center justify-between bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+          <div class="flex items-center">
+            <span class="font-bold mr-2">Student:</span>
+            <span>${studentName}</span>
+          </div>
+          <div class="flex space-x-3">
+            <div class="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-3 py-1 rounded-full text-sm flex items-center">
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              ${result.passed}
+            </div>
+            <div class="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 px-3 py-1 rounded-full text-sm flex items-center">
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+              ${result.failed}
+            </div>
+          </div>
+        </div>
+        <ul class="space-y-2">
+      `;
+      
+      // Animate each result item
+      for (let i = 0; i < result.details.length; i++) {
+        const detail = result.details[i];
+        const delay = i * 100; // Stagger animations
+        
+        if (detail.status === "Passed") {
+          detailsHTML += `
+            <li class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 opacity-0 transform translate-y-4" 
+                style="animation: fadeInUp 0.5s ease forwards ${delay}ms">
+              <div class="flex items-start">
+                <svg class="w-5 h-5 text-green-600 dark:text-green-400 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <div>
+                  <div class="font-medium">Input: ${detail.input}</div>
+                  <div class="text-green-600 dark:text-green-400 text-sm">Passed</div>
+                </div>
+              </div>
+            </li>`;
+        } else if (detail.status === "Failed") {
+          detailsHTML += `
+            <li class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 opacity-0 transform translate-y-4" 
+                style="animation: fadeInUp 0.5s ease forwards ${delay}ms">
+              <div class="flex items-start">
+                <svg class="w-5 h-5 text-red-600 dark:text-red-400 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                <div>
+                  <div class="font-medium">Input: ${detail.input}</div>
+                  <div class="text-red-600 dark:text-red-400 text-sm">Failed</div>
+                  <div class="text-xs mt-1">
+                    <span class="font-medium">Expected:</span> ${detail.expected}
+                    <span class="font-medium ml-2">Got:</span> ${detail.actual}
+                  </div>
+                </div>
+              </div>
+            </li>`;
+        } else if (detail.status === "Error" || detail.status === "Syntax Error") {
+          detailsHTML += `
+            <li class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 opacity-0 transform translate-y-4" 
+                style="animation: fadeInUp 0.5s ease forwards ${delay}ms">
+              <div class="flex items-start">
+                <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+                <div>
+                  <div class="font-medium">Error</div>
+                  <div class="text-amber-600 dark:text-amber-400 text-sm break-all">${detail.error}</div>
+                </div>
+              </div>
+            </li>`;
+        }
+      }
+      
+      detailsHTML += `</ul>`;
+      resultsContainer.innerHTML = detailsHTML;
+      debugMessage.textContent = "Execution completed successfully.";
+      setTimeout(() => {
+        debugMessage.classList.add('hidden');
+      }, 3000);
+    } catch (error) {
+      console.error("Error during execution:", error);
+      resultElement.textContent = "Error running code.";
+      resultsContainer.innerHTML = `
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mt-4">
+          <div class="flex">
+            <svg class="w-6 h-6 text-red-600 dark:text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div>
+              <h3 class="text-red-800 dark:text-red-300 font-medium">Execution Error</h3>
+              <div class="mt-1 text-red-700 dark:text-red-400">${error.message}</div>
+            </div>
+          </div>
+        </div>`;
+      debugMessage.textContent = `Error: ${error.message}`;
     }
-  });
+  }
 </script>
 
 <style>
-  /* Smooth animations for expanding/collapsing */
-  .hidden {
-    max-height: 0;
-    opacity: 0;
-    transition: max-height 0.3s ease, opacity 0.3s ease;
+  /* Animations */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
-
-  .hidden:not(.hidden) {
-    opacity: 1;
-  }
-
+  
   /* Hover effect for containers */
-  li:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+  .hover\:scale-102:hover {
+    transform: scale(1.02);
+  }
+  
+  /* Smooth transitions */
+  .transition-all {
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Elegant scrollbar */
+  .overflow-y-auto::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .overflow-y-auto::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+  }
+  
+  .overflow-y-auto::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+  }
+  
+  .dark .overflow-y-auto::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .dark .overflow-y-auto::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
   }
 </style>
 {% endblock %}
