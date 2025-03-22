@@ -1,11 +1,19 @@
 from flask import Flask, render_template
 from dotenv import load_dotenv
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
 import os
 
 load_dotenv()  # Load environment variables from .env file
 api_key = os.getenv('API_KEY')
 
 app = Flask(__name__)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db/Student.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize SQLAlchemy
+db = SQLAlchemy(app)
 
 @app.route("/")
 def home():
@@ -51,6 +59,7 @@ def grading_dashboard():
     ]
 
     return render_template("grading_dashboard.html", assignment=assignment, test_cases=test_cases, students=students)
+
 
 
 if __name__ == "__main__":
