@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Grading Dashboard{% endblock %}
+
+{% block content %}
+<!-- Overall container -->
+<div class="flex">
+  <!-- Left Section -->
+  <div class="w-1/3 border-r border-gray-200 dark:border-gray-700 p-4">
+    <!-- Assignment Description -->
+    <div class="mb-4">
+      <h2 class="text-xl font-semibold">Assignment: {{ assignment.title }}</h2>
+      <p class="mt-2 text-sm">{{ assignment.description }}</p>
+    </div>
+
+    <!-- Rubric -->
+    <div class="mb-4">
+      <h2 class="text-xl font-semibold">Rubric</h2>
+      <ul class="mt-2 list-disc list-inside text-sm">
+        {% for criterion, weight in assignment.rubric.items() %}
+        <li>{{ criterion }} ({{ weight }}%)</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <!-- Test Cases -->
+    <div>
+      <h2 class="text-xl font-semibold">Test Cases</h2>
+      <ul class="mt-2 list-disc list-inside text-sm">
+        {% for test_case in test_cases %}
+        <li><strong>Input:</strong> {{ test_case.input }} | <strong>Expected:</strong> {{ test_case.expected }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- Right Section -->
+  <div class="w-2/3 p-4">
+    <!-- Grading Dashboard Header -->
+    <h2 class="text-2xl font-bold mb-4">Grading Dashboard</h2>
+
+    <!-- Student Solutions -->
+    <div>
+      <h3 class="text-lg font-medium mb-2">Student Solutions</h3>
+      <ul class="space-y-4">
+        {% for student in students %}
+        <li class="border rounded p-4 hover:shadow-lg transition-shadow duration-300">
+          <div class="flex justify-between items-center">
+            <h4 class="font-semibold">{{ student.name }} – {{ '✓ Correct' if student.correct else '✗ Incorrect' }}</h4>
+            <button class="text-blue-500 hover:underline" onclick="toggleCode('student-{{ loop.index }}', this)">
+              Show Solution
+            </button>
+          </div>
+          <div id="student-{{ loop.index }}" class="hidden mt-2 transition-all duration-300 overflow-hidden">
+            <pre class="bg-gray-100 dark:bg-gray-800 p-2 rounded text-sm">{{ student.solution }}</pre>
+            <p class="text-sm text-gray-600 mt-2">{{ student.annotation }}</p>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Toggle visibility of student code and update button text
+  function toggleCode(id, button) {
+    const element = document.getElementById(id);
+    if (element.classList.contains('hidden')) {
+      element.classList.remove('hidden');
+      element.style.maxHeight = element.scrollHeight + "px"; // Smooth expand
+      button.textContent = "Hide Solution";
+    } else {
+      element.style.maxHeight = "0"; // Smooth collapse
+      element.addEventListener('transitionend', () => element.classList.add('hidden'), { once: true });
+      button.textContent = "Show Solution";
+    }
+  }
+
+  // Preserve dark mode across pages
+  document.addEventListener('DOMContentLoaded', () => {
+    const darkMode = localStorage.getItem('darkMode');
+    if (darkMode === 'enabled') {
+      document.documentElement.classList.add('dark');
+    }
+  });
+</script>
+
+<style>
+  /* Smooth animations for expanding/collapsing */
+  .hidden {
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+  }
+
+  .hidden:not(.hidden) {
+    opacity: 1;
+  }
+
+  /* Hover effect for containers */
+  li:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+</style>
+{% endblock %}
