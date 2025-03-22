@@ -1,18 +1,45 @@
-# Python-related
+# Python
 __pycache__/
 *.py[cod]
+*$py.class
 *.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Virtual environment
+# Virtual Environment
 venv/
+ENV/
+
+# Environment Variables
 .env
-*.venv
-Pipfile.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
 
 # Flask-specific
 instance/
 config.py
-.env
 
 # Logs and caches
 *.log
@@ -21,15 +48,11 @@ config.py
 *.pkl
 *.cache
 
-# IDE/editor files
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS files
-.DS_Store
-Thumbs.db
-
 # Jupyter
 .ipynb_checkpoints/
+
+# Pipfile.lock
+Pipfile.lock
+
+# Thumbs.db
+Thumbs.db
