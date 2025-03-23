@@ -4,41 +4,69 @@
 
 {% block content %}
 <div class="container mx-auto p-2">
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-    
-        <!-- Top Left: Rubric Section -->
-    <div class="md:col-span-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg transform hover:scale-102 transition-all duration-300 overflow-hidden">
-      <div class="bg-blue-600 text-white p-1">
-        <h2 class="text-lg font-medium">Assignment: {{ assignment.title }}</h2>
-        
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-3" id="main-grid">
+    <!-- Left Sidebar: Rubric and Test Cases -->
+    <div id="left-sidebar" class="space-y-3">
+      <!-- Rubric Section -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg transform hover:scale-102 transition-all duration-300 overflow-hidden">
+        <!-- Rubric content here -->
+        <div class="bg-blue-600 text-white p-1">
+          <h2 class="text-lg font-medium">Assignment: {{ assignment.title }}</h2>
+        </div>
+        <div class="p-3">
+          <p class="mb-3 text-sm">{{ assignment.description }}</p>
+          <h3 class="text-lg font-medium mb-2 border-b pb-1">Rubric</h3>
+          <ul class="space-y-1 text-sm">
+            {% for criterion, weight in assignment.rubric.items() %}
+            <li class="flex justify-between items-center">
+              <span>{{ criterion }}</span>
+              <span class="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full text-xs font-medium">{{ weight }}%</span>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
       </div>
-      <div class="p-3">
-        <p class="mb-3 text-sm">{{ assignment.description }}</p>
-        
-        <h3 class="text-lg font-medium mb-2 border-b pb-1">Rubric</h3>
-        <ul class="space-y-1 text-sm">
-          {% for criterion, weight in assignment.rubric.items() %}
-          <li class="flex justify-between items-center">
-            <span>{{ criterion }}</span>
-            <span class="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full text-xs font-medium">{{ weight }}%</span>
-          </li>
-          {% endfor %}
-        </ul>
+      
+      <!-- Test Cases Section -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg transform hover:scale-102 transition-all duration-300 overflow-hidden">
+        <!-- Test Cases content here -->
+        <div class="bg-purple-600 text-white p-1">
+          <h2 class="text-lg font-medium">Test Cases</h2>
+        </div>
+        <div class="p-3 max-h-64 overflow-y-auto">
+          <ul class="space-y-2 test-cases-content>
+            {% for test_case in test_cases %}
+            <li class="border-b pb-2 last:border-b-0">
+              <div class="text-xs font-medium text-gray-500 dark:text-gray-400">Input:</div>
+              <div class="bg-gray-100 dark:bg-gray-700 p-2 rounded mb-1 font-mono text-sm">{{ test_case.input }}</div>
+              <div class="text-xs font-medium text-gray-500 dark:text-gray-400">Expected:</div>
+              <div class="bg-gray-100 dark:bg-gray-700 p-2 rounded font-mono text-sm">{{ test_case.expected }}</div>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
       </div>
     </div>
+    
+    <!-- Toggle button positioned between sections -->
+    <button id="toggle-sidebar" class="absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 bg-indigo-700 hover:bg-indigo-800 text-white rounded-full p-2 shadow-lg z-10 transition-all duration-300">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 chevron-icon transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
 
-
-    <!-- Top Right: Students Section -->
-    <div class="md:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg flex flex-col overflow-hidden" id="students-container">
-      <div class="bg-green-600 text-white p-1">
-        <h2 class="text-lg font-medium">Student Solutions</h2>
-      </div>
-        
+    <!-- Right Sections: Students and Execution Results -->
+    <div class="md:col-span-2 space-y-3">
+      <!-- Students Section -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg flex flex-col overflow-hidden" id="students-container">
+        <!-- Students content here -->
+        <div class="bg-green-600 text-white p-1">
+          <h2 class="text-lg font-medium">Student Solutions</h2>
+        </div>
         <button class="mb-3 bg-indigo-700 hover:bg-indigo-800 text-white px-4 py-2 rounded-lg"
                 onclick="evaluateAllStudents()">
           Evaluate All Students
         </button>
-
         <ul class="space-y-2">
           {% for student in students %}
           <li class="border rounded-lg p-3 hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-700" data-student="{{ student.name }}">
@@ -55,60 +83,42 @@
             </div>
             <div id="student-{{ loop.index }}" class="hidden mt-2 transition-all duration-500 overflow-hidden">
               <pre class="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg text-sm border border-gray-200 dark:border-gray-600">{{ student.solution }}</pre>
-              <p class="text-sm text-gray-600 dark:text-gray-400 mt-2 italic">{{ student.annotation }}</p>
             </div>
           </li>
           {% endfor %}
         </ul>
       </div>
-    </div>
-
-    <!-- Bottom Left: Test Cases Section -->
-    <div class="md:col-span-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg transform hover:scale-102 transition-all duration-300 overflow-hidden">
-      <div class="bg-purple-600 text-white p-1">
-        <h2 class="text-lg font-medium">Test Cases</h2>
-      </div>
-      <div class="p-3 max-h-64 overflow-y-auto">
-        <ul class="space-y-2">
-          {% for test_case in test_cases %}
-          <li class="border-b pb-2 last:border-b-0">
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400">Input:</div>
-            <div class="bg-gray-100 dark:bg-gray-700 p-2 rounded mb-1 font-mono text-sm">{{ test_case.input }}</div>
-            <div class="text-xs font-medium text-gray-500 dark:text-gray-400">Expected:</div>
-            <div class="bg-gray-100 dark:bg-gray-700 p-2 rounded font-mono text-sm">{{ test_case.expected }}</div>
-          </li>
-          {% endfor %}
-        </ul>
-      </div>
-    </div>
-
-    <!-- Bottom Right: Execution Results Section -->
-    <div class="md:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden" id="results-section">
-      <div class="bg-amber-600 text-white p-1 flex justify-between items-center">
-        <h2 class="text-lg font-medium">Execution Results</h2>
-        <div class="flex items-center">
-          <button id="resize-handle" class="text-white hover:bg-amber-700 px-2 py-1 rounded">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7l4-4m0 0l4 4m-4-4v18" />
-            </svg>
-          </button>
-        </div>
-      </div>
-      <div id="results-container" class="p-3 overflow-y-auto" style="min-height: 150px; max-height: 400px;">
-        <div id="results-output" class="mt-2">
-          <div class="flex items-center justify-center h-32 text-gray-400">
-            <div class="text-center">
-              <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path>
+      
+      <!-- Execution Results Section -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden" id="results-section">
+        <!-- Execution Results content here -->
+        <div class="bg-amber-600 text-white p-1 flex justify-between items-center">
+          <h2 class="text-lg font-medium">Execution Results</h2>
+          <div class="flex items-center">
+            <button id="resize-handle" class="text-white hover:bg-amber-700 px-2 py-1 rounded">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7l4-4m0 0l4 4m-4-4v18" />
               </svg>
-              <p>Select a student solution or evaluate all students to see results here</p>
-            </div>
+            </button>
           </div>
-          <!-- Debugging message -->
-          <p id="debug-message" class="text-red-500 hidden"></p>
+        </div>
+        <div id="results-container" class="p-3 overflow-y-auto" style="min-height: 150px; max-height: 400px;">
+          <div id="results-output" class="mt-2">
+            <div class="flex items-center justify-center h-32 text-gray-400">
+              <div class="text-center">
+                <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path>
+                </svg>
+                <p>Select a student solution or evaluate all students to see results here</p>
+              </div>
+            </div>
+            <!-- Debugging message -->
+            <p id="debug-message" class="text-red-500 hidden"></p>
+          </div>
         </div>
       </div>
     </div>
+    
   </div>
 </div>
 
@@ -377,121 +387,192 @@
     resultsContainer.innerHTML = detailsHTML;
   }
 
-  // Evaluate all students function
-  async function evaluateAllStudents() {
-    const studentItems = document.querySelectorAll('li[data-student]');
-    const resultsContainer = document.getElementById("results-output");
-    
-    // Clear results container and show main loading indicator
+  // Executes a student's code against the test cases.
+async function runCode(studentName, index) {
+  const resultsContainer = document.getElementById("results-output");
+  // Show a loading indicator for test case execution.
+  resultsContainer.innerHTML = `
+    <div class="flex items-center justify-center h-32">
+      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <span class="ml-3 font-medium">Running test cases for ${studentName}...</span>
+    </div>
+  `;
+  
+  try {
+    const runResponse = await fetch("/run_code", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ student_name: studentName })
+    });
+    if (!runResponse.ok) throw new Error(`HTTP error! status: ${runResponse.status}`);
+    const runResult = await runResponse.json();
+    return runResult;
+  } catch (error) {
+    console.error("Error during runCode for " + studentName + ":", error);
+    throw error;
+  }
+}
+
+// Evaluates all students by merging AI evaluation and test case execution.
+async function evaluateAllStudents() {
+  const studentItems = document.querySelectorAll('li[data-student]');
+  const resultsContainer = document.getElementById("results-output");
+  
+  // Show main loading indicator.
+  resultsContainer.innerHTML = `
+    <div class="flex items-center justify-center h-32">
+      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <span class="ml-3 font-medium">Initializing evaluation...</span>
+    </div>
+  `;
+  
+  let index = 1;
+  for (let li of studentItems) {
+    const studentName = li.getAttribute('data-student');
+    // Update loading indicator with current student information.
     resultsContainer.innerHTML = `
-      <div class="flex items-center justify-center h-32">
-        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        <span class="ml-3 font-medium">Initializing evaluation...</span>
+      <div class="flex items-center justify-center h-32 flex-col">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-2"></div>
+        <span class="font-medium">Evaluating ${studentName}...</span>
+        <span class="text-sm text-gray-500 mt-1">(${index} of ${studentItems.length})</span>
       </div>
     `;
     
-    // Process each student
-    let index = 1;
-    for (let li of studentItems) {
-      const studentName = li.getAttribute('data-student');
+    try {
+      // Get AI evaluation from /evaluate_student API.
+      const evalResponse = await fetch("/evaluate_student", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ student_name: studentName })
+      });
+      if (!evalResponse.ok) throw new Error(`HTTP error! status: ${evalResponse.status}`);
+      const evalResult = await evalResponse.json();
       
-      // Update loading indicator with current student
-      resultsContainer.innerHTML = `
-        <div class="flex items-center justify-center h-32 flex-col">
-          <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-2"></div>
-          <span class="font-medium">Evaluating ${studentName}...</span>
-          <span class="text-sm text-gray-500 mt-1">(${index} of ${studentItems.length})</span>
-        </div>
-      `;
-
-      try {
-        // Evaluate student (both AI and test cases)
-        const response = await fetch("/evaluate_student", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ student_name: studentName })
-        });
-        
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const result = await response.json();
-        evaluationCache[studentName] = result;
-        // Calculate final score (50% AI, 50% test cases)
-        const aiScore = result.scores.total || 0;
-        const testScore = result.test_results ? 
-                        (result.test_results.passed / (result.test_results.passed + result.test_results.failed) * 100) || 0 : 0;
-        const finalScore = Math.round((aiScore * 0.5) + (testScore * 0.5));
-        
-        // Update the grade display next to the student's name
-        const gradeEl = document.getElementById(`grade-${index}`);
-        gradeEl.textContent = finalScore + "%";
-        
-        // Update status indicator
-        const statusEl = document.getElementById(`status-${index}`);
-        statusEl.classList.remove("hidden");
-        if (finalScore >= 70) {
-          statusEl.className = "inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-600";
-          statusEl.innerHTML = "✓";
-        } else if (finalScore >= 50) {
-          statusEl.className = "inline-flex items-center justify-center w-6 h-6 rounded-full bg-yellow-100 text-yellow-600";
-          statusEl.innerHTML = "!";
-        } else {
-          statusEl.className = "inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-600";
-          statusEl.innerHTML = "✗";
-        }
-        
-        // If this is the last student, display their full results
-        if (index === studentItems.length) {
-          displayCombinedResults(studentName, result);
-        }
-        
-      } catch (error) {
-        console.error(`Error evaluating ${studentName}:`, error);
-        
-        // Show error in results container if this is the last student
-        if (index === studentItems.length) {
-          resultsContainer.innerHTML = `
-            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mt-3">
-              <div class="flex">
-                <svg class="w-6 h-6 text-red-600 dark:text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <div>
-                  <h3 class="text-red-800 dark:text-red-300 font-medium">Error During Evaluation</h3>
-                  <div class="mt-1 text-red-700 dark:text-red-400">${error.message}</div>
-                </div>
-              </div>
-            </div>`;
-        }
+      // Run test cases using runCode.
+      const runResult = await runCode(studentName, index);
+      
+      // Calculate final weighted score (50% AI, 50% test cases).
+      const aiScore = evalResult.scores.total || 0;
+      const testScore = runResult.passed ? ((runResult.passed / (runResult.passed + runResult.failed)) * 100) : 0;
+      const finalScore = Math.round((aiScore * 0.5) + (testScore * 0.5));
+      
+      // Update the displayed grade next to the student's name.
+      const gradeEl = document.getElementById(`grade-${index}`);
+      gradeEl.textContent = finalScore + "%";
+      
+      // Update status indicator.
+      const statusEl = document.getElementById(`status-${index}`);
+      statusEl.classList.remove("hidden");
+      if (finalScore >= 70) {
+        statusEl.className = "inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-600";
+        statusEl.innerHTML = "✓";
+      } else if (finalScore >= 50) {
+        statusEl.className = "inline-flex items-center justify-center w-6 h-6 rounded-full bg-yellow-100 text-yellow-600";
+        statusEl.innerHTML = "!";
+      } else {
+        statusEl.className = "inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-600";
+        statusEl.innerHTML = "✗";
       }
       
-      index++;
-      // Short delay between processing students to avoid overwhelming the server
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Merge the test case results into the evaluation result and cache it.
+      evalResult.test_results = runResult;
+      evaluationCache[studentName] = evalResult;
+      
+      // Optionally, display the full combined details for the last evaluated student.
+      if (index === studentItems.length) {
+        displayCombinedResults(studentName, evalResult);
+      }
+      
+    } catch (error) {
+      console.error(`Error evaluating ${studentName}:`, error);
+      if (index === studentItems.length) {
+        resultsContainer.innerHTML = `
+          <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mt-3">
+            <div class="flex">
+              <svg class="w-6 h-6 text-red-600 dark:text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <div>
+                <h3 class="text-red-800 dark:text-red-300 font-medium">Error During Evaluation</h3>
+                <div class="mt-1 text-red-700 dark:text-red-400">${error.message}</div>
+              </div>
+            </div>
+          </div>`;
+      }
     }
     
-    // Show final summary when all students are evaluated
-    if (studentItems.length > 1) {
-      const summary = document.createElement('div');
-      summary.className = 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 mt-3 animate__fadeIn';
-      summary.style.animation = 'fadeInUp 0.5s ease forwards';
-      summary.innerHTML = `
-        <div class="flex items-center">
-          <svg class="w-6 h-6 text-green-600 dark:text-green-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          <div>
-            <h3 class="text-green-800 dark:text-green-300 font-medium">Evaluation Complete</h3>
-            <div class="mt-1 text-green-700 dark:text-green-400">
-              All ${studentItems.length} students have been evaluated. Click on a student's "Show Solution" button to see detailed results.
-            </div>
+    index++;
+    // Small delay to avoid overwhelming the server.
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+  
+  // Final summary for all students.
+  if (studentItems.length > 1) {
+    const summary = document.createElement('div');
+    summary.className = 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 mt-3 animate__fadeIn';
+    summary.style.animation = 'fadeInUp 0.5s ease forwards';
+    summary.innerHTML = `
+      <div class="flex items-center">
+        <svg class="w-6 h-6 text-green-600 dark:text-green-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <div>
+          <h3 class="text-green-800 dark:text-green-300 font-medium">Evaluation Complete</h3>
+          <div class="mt-1 text-green-700 dark:text-green-400">
+            All ${studentItems.length} students have been evaluated. Click on a student's "Show Solution" button to see detailed results.
           </div>
         </div>
-      `;
-      resultsContainer.prepend(summary);
-    }
+      </div>
+    `;
+    resultsContainer.prepend(summary);
   }
+}
 
+
+// sidebar toggle functionality
+document.getElementById('toggle-sidebar').addEventListener('click', function () {
+  const sidebar = document.getElementById('left-sidebar');
+  const mainGrid = document.getElementById('main-grid');
+  const chevronIcon = this.querySelector('.chevron-icon');
   
+  // If sidebar is visible, hide it
+  if (window.getComputedStyle(sidebar).display !== 'none') {
+    // Animate hiding
+    sidebar.style.transition = "all 0.3s ease";
+    sidebar.style.width = "0";
+    sidebar.style.opacity = "0";
+    
+    setTimeout(() => {
+      sidebar.style.display = "none";
+      // Adjust grid: switch from 3 to 1 column (right section will span full width)
+      mainGrid.classList.remove("md:grid-cols-3");
+      mainGrid.classList.add("md:grid-cols-1");
+      
+      // Update toggle button position and rotate icon
+      this.classList.remove('-translate-x-1/2');
+      chevronIcon.style.transform = "rotate(180deg)";
+    }, 300);
+    
+  } else {
+    // Show sidebar
+    sidebar.style.display = "flex";
+    // Ensure full vertical height when restored
+    sidebar.style.height = "100vh";
+    // Force reflow (optional) so we can animate from 0 width/opacity if needed
+    sidebar.offsetWidth;
+    sidebar.style.transition = "all 0.3s ease";
+    sidebar.style.width = "";
+    sidebar.style.opacity = "1";
+    
+    // Reset grid layout: display three columns
+    mainGrid.classList.remove("md:grid-cols-1");
+    mainGrid.classList.add("md:grid-cols-3");
+    
+    // Reset toggle button position and icon rotation
+    this.classList.add('-translate-x-1/2');
+    chevronIcon.style.transform = "rotate(0deg)";
+  }
+});
 
 </script>
 
@@ -703,11 +784,102 @@
     border-top-color: #60a5fa;
   }
 
-  /* Force full-width container with no padding or margin */
-  .container {
-    width: 100%;
-    max-width: 100%;
+  body, html {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    overflow: hidden;
   }
 
+  .container {
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+    padding: 0 !important;
+  }
+
+  #main-grid {
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Ensure scrollbars only appear within contained elements */
+  #results-output, 
+  #students-container ul,
+  
+  #left-sidebar > div {
+    overflow-y: auto;
+  }
+
+  #left-sidebar {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow-y: hidden;
+  }
+
+  /* Make Rubric take more space */
+  #left-sidebar > div:first-child {
+    flex-grow: 3;
+    overflow-y: auto;
+  }
+
+  /* Make Test Cases take less space */
+  #left-sidebar > div:last-child {
+    flex-grow: 2;
+    overflow-y: auto;
+  }
+
+  #left-sidebar {
+    transition: width 0.3s ease, opacity 0.3s ease, max-width 0.3s ease;
+  }
+
+  #toggle-sidebar {
+    transition: left 0.3s ease, transform 0.3s ease;
+  }
+
+  .md\:col-span-2 {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow-y: hidden;
+  }
+
+  /* Student container */
+  #students-container {
+    flex: 1;
+    max-height: 35vh;
+    overflow-y: auto;
+  }
+
+  /* Results container */
+  #results-section {
+    flex: 2;
+  }
+
+  #results-container {
+    max-height: none !important;
+    height: calc(100% - 36px); /* Subtract header height */
+    min-height: auto !important;
+  }
+
+  .chevron-icon {
+    transition: transform 0.3s ease;
+  }
+
+  /* For when sidebar is collapsed */
+  .sidebar-collapsed #toggle-sidebar {
+    transform: translateY(-50%);
+  }
+
+  /* Smooth layout transitions */
+  #main-grid {
+    transition: grid-template-columns 0.3s ease;
+  }
+
+  .test-cases-content {
+    height: 100%;
+  }
+  
 </style>
 {% endblock %}
