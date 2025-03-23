@@ -165,6 +165,7 @@ def upload_pdf():
     assignment["rubric"] = rubric
     
     return redirect("/grading_dashboard")
+
 def pdf_to_json(pdf_stream):
     try:
         doc = fitz.open(pdf_stream)  # Open PDF directly from the file stream
