@@ -38,7 +38,7 @@ ENV/
 .DS_Store
 
 # Flask-specific
-instance/
+
 config.py
 
 # Logs and caches
