@@ -158,8 +158,13 @@ def upload_pdf():
     
     assignment["description"] = full_pdf_text
     
-    return redirect("/grading_dashboard")
+    
+    rubric = generate_rubric_based_on_description(full_pdf_text)
 
+    # Update rubric with the generated values
+    assignment["rubric"] = rubric
+    
+    return redirect("/grading_dashboard")
 def pdf_to_json(pdf_stream):
     try:
         doc = fitz.open(pdf_stream)  # Open PDF directly from the file stream
@@ -180,7 +185,48 @@ def pdf_to_json(pdf_stream):
     except Exception as e:
         print(f"Error processing PDF: {e}")
         return None
+    
+def generate_rubric_based_on_description(assignment_description):
+    prompt = f"""
+    Generate a rubric for a programming assignment based on the following description:
+    {assignment_description} 
+    
+    Please evaluate the description, create a rubric according to the description and return a JSON response exactly formatted as:
+  "rubric": {{
+      "criteria 1": <points in integer>,
+      "criteria 2": <points in integer>,
+      "criteria 3": <points in integer>,
+      "etc.": <points in integer>
+  }}
+  The total should be 100 points.
+  Note that the format is really important, each criteria should be a key-value pair for JSON object. The criteria is a string with 
+  quotations and the points are integers without quotations.
+  make rubric for the assignment based on the description,
+    Limit the criteria to 6 or fewer for simplicity,
+    """
+    response = query_gemini(prompt, api_key)  # Assuming query_gemini is your AI call
 
+    # Handle and clean the response from AI to parse as JSON or structured rubric
+    print(response)
+    cleaned_response = response.strip()
+    if cleaned_response.startswith("```json"):
+        cleaned_response = cleaned_response[len("```json"):].strip()
+    if cleaned_response.endswith("```"):
+        cleaned_response = cleaned_response[:-3].strip()
+    if cleaned_response.startswith("{") and cleaned_response.endswith("}"):
+    # Remove the first and last characters (curly braces)
+        cleaned_response = cleaned_response[1:-1].strip()
+    if cleaned_response.startswith('"rubric":'):
+        cleaned_response = cleaned_response[len('"rubric":'):].strip()
+    print(f"Cleaned response: {cleaned_response}")
+    try:
+        rubric = json.loads(cleaned_response)
+        print(f"Generated rubric: {rubric}")
+        return rubric
+    except Exception as e:
+        print(f"Error generating rubric: {e}")
+        return None
+    
 @app.route("/run_code", methods=["POST"])
 def run_code():
     data = request.json
@@ -301,6 +347,27 @@ Please evaluate the solution based on the above rubric and return a JSON respons
         return jsonify({"error": f"Invalid JSON response: {str(e)}"}), 500
     return jsonify(res_json)
 
+@app.route('/add_student', methods=['POST'])
+def add_student():
+    data = request.get_json()
+    name = data.get('student_name')
+    solution = data.get('student_solution')
+
+    # Fix: You missed required fields
+    if not name or not solution:
+        return jsonify({'error': 'Missing student name or solution!'}), 400
+
+    # Check if student already exists
+    existing_student = Student.query.filter_by(name=name).first()
+    if existing_student:
+        return jsonify({'error': 'Student with this name already exists!'}), 400
+
+    # Create a new student entry
+    student = Student(name=name, solution=solution, correct=False, annotation="")
+    db.session.add(student)
+    db.session.commit()
+
+    return jsonify({'message': 'Student added successfully!'}), 200
 
 @app.route('/delete')   
 def delete_students():
