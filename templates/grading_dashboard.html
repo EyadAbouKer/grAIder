@@ -146,35 +146,11 @@
     </div>
   </div>
 </div>
-<script>
-  // Get elements
-  const showPopupBtn = document.getElementById('showPopupBtn');
-  const closePopupBtn = document.getElementById('closePopupBtn');
-  const popup = document.getElementById('popup');
-  const overlay = document.getElementById('overlay');
-
-  // Show popup when button is clicked
-  showPopupBtn.addEventListener('click', () => {
-    console.log("Show Popup Button Clicked");
-    popup.classList.remove('hidden');
-    overlay.classList.remove('hidden');
-  });
-
-  // Close popup when close button or overlay is clicked
-  closePopupBtn.addEventListener('click', () => {
-    console.log("Close Popup Button Clicked");
-    popup.classList.add('hidden');
-    overlay.classList.add('hidden');
-  });
-
-  overlay.addEventListener('click', () => {
-    console.log("Overlay Clicked");
-    popup.classList.add('hidden');
-    overlay.classList.add('hidden');
-  });
-</script>
 
 <script>
+  let evaluationCache = {};
+
+
   let isResizing = false;
   let startHeight;
   let startY;
@@ -233,6 +209,12 @@
   // Display results for selected student
   async function displayStudentResults(studentName, index) {
     const resultsContainer = document.getElementById("results-output");
+
+    if(evaluationCache[studentName]) {
+      displayCombinedResults(studentName, evaluationCache[studentName]);
+      return;
+    }
+
     const debugMessage = document.getElementById("debug-message");
     
     // Show loading animation
@@ -250,7 +232,8 @@
         const response = await fetch(`/get_student_results?student_name=${encodeURIComponent(studentName)}`);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const result = await response.json();
-        
+        evaluationCache[studentName] = result;
+
         // Display the combined evaluation results
         displayCombinedResults(studentName, result);
       } catch (error) {
@@ -466,7 +449,7 @@
         
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const result = await response.json();
-        
+        evaluationCache[studentName] = result;
         // Calculate final score (50% AI, 50% test cases)
         const aiScore = result.scores.total || 0;
         const testScore = result.test_results ? 
