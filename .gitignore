@@ -44,7 +44,6 @@ config.py
 # Logs and caches
 *.log
 *.sqlite3
-*.db
 *.pkl
 *.cache
 
