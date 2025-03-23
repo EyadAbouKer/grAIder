@@ -1,7 +1,9 @@
 from flask import Flask, render_template, request, jsonify, request, jsonify
 from dotenv import load_dotenv
 import os
+import json
 from gemeniapi import query_gemini, studentEvaluator
+from flask_sqlalchemy import SQLAlchemy
 
 load_dotenv()  # Load environment variables from .env file
 api_key = os.getenv('GEMINI_API_KEY')
@@ -52,11 +54,11 @@ students = [
     {"name": "Julia", "solution": "def sum_even(numbers):\n    total = 0\n    for num in numbers:\n        # This condition is intended to check evenness but is flawed.\n        if (num / 2) % 2 == 0:\n            total += num\n    return total", "correct": False, "annotation": "Faulty condition using division leads to wrong results."}
 ]
     
-    #evaluate the students solutions based on the assignment
-    studentEvaluator(students, assignment, api_key)
-    # print(evaluations[0])
-    
-    # return render_template("grading_dashboard.html", assignment=assignment, test_cases=test_cases, students=students, evaluations=evaluations[0])
+#evaluate the students solutions based on the assignment
+studentEvaluator(students, assignment, api_key)
+# print(evaluations[0])
+
+# return render_template("grading_dashboard.html", assignment=assignment, test_cases=test_cases, students=students, evaluations=evaluations[0])
 
 @app.route("/")
 def home():
