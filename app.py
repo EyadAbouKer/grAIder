@@ -1,12 +1,14 @@
-from flask import Flask, render_template, request, jsonify, request, jsonify
+from flask import Flask, render_template,redirect, request, jsonify, request, jsonify
 from dotenv import load_dotenv
 import os
 import json
 import ast
+import fitz
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from gemeniapi import query_gemini
 from flask_sqlalchemy import SQLAlchemy
+
 
 load_dotenv()  # Load environment variables from .env file
 api_key = os.getenv('GEMINI_API_KEY')
@@ -130,6 +132,54 @@ def query():
     except Exception as e:
         return jsonify({"error": f"Server error: {str(e)}"}), 500
 
+@app.route('/upload_description', methods=['POST'])
+def upload_pdf():
+    if 'assignment_file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    
+
+    file = request.files['assignment_file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    
+   
+    app.config['UPLOAD_FOLDER'] = 'uploads'
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+    file.save(file_path)
+    
+    # Process the saved PDF file
+    pdf_data = pdf_to_json(file_path)
+
+    if not pdf_data:
+        return jsonify({'error': 'No text extracted from the PDF'}), 400
+    
+        # Combine all page text from the PDF into one large string for the description
+    full_pdf_text = "\n".join([text for page, text in pdf_data.items()])
+    
+    assignment["description"] = full_pdf_text
+    
+    return redirect("/grading_dashboard")
+
+def pdf_to_json(pdf_stream):
+    try:
+        doc = fitz.open(pdf_stream)  # Open PDF directly from the file stream
+        pdf_data = {}
+
+        for page_num in range(len(doc)):
+            page = doc.load_page(page_num)
+            page_text = page.get_text("text")
+            
+            # Check if any text is extracted
+            if page_text.strip():  # If there's any non-whitespace text
+                pdf_data[f"page_{page_num + 1}"] = page_text
+            else:
+                pdf_data[f"page_{page_num + 1}"] = "No text found on this page."
+        
+        return pdf_data if pdf_data else None
+
+    except Exception as e:
+        print(f"Error processing PDF: {e}")
+        return None
 
 @app.route("/run_code", methods=["POST"])
 def run_code():
