@@ -62,10 +62,6 @@ test_cases = [
     {"input": "[100, 101, 102]", "expected": "202"}
 ]
 
-
-
-
-    
     #evaluate the students solutions based on the assignment
     #studentEvaluator(students, assignment, api_key)
     # print(evaluations[0])
@@ -240,8 +236,16 @@ Please evaluate the solution based on the above rubric and return a JSON respons
     print("[evaluate_student] Prompt sent to Gemini:\n", prompt)
     response = query_gemini(prompt, api_key)
     print("[evaluate_student] Raw response from Gemini:", response)
+
+    # Clean up response if it is wrapped in markdown code fence blocks
+    cleaned_response = response.strip()
+    if cleaned_response.startswith("```json"):
+        cleaned_response = cleaned_response[len("```json"):].strip()
+    if cleaned_response.endswith("```"):
+        cleaned_response = cleaned_response[:-3].strip()
     try:
-        res_json = json.loads(response)
+        res_json = json.loads(cleaned_response)
+        
     except Exception as e:
         print("[evaluate_student] JSON parse error:", e)
         return jsonify({"error": f"Invalid JSON response: {str(e)}"}), 500
