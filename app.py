@@ -85,10 +85,11 @@ def grading_dashboard():
 
 @app.route("/seed_data")  
 def seed_data():
-    print("Seeding data...")
     if not Student.query.first():
         students = [
-
+            {"name": "Alice", "solution": "def sum_even(numbers):\n    return sum(x for x in numbers if x % 2 == 0)", "correct": True, "annotation": "Correct solution."},
+            {"name": "Bob", "solution": "def sum_even(numbers):\n    total = 0\n    for x in numbers:\n        if x % 2 == 1:\n            total += x\n    return total", "correct": False, "annotation": "Checks for odd numbers instead of even."},
+            {"name": "Charlie", "solution": "def sum_even(numbers):\n    total = 0\n    for num in numbers:\n        if num % 2 == 0:\n            total += num\n    return total", "correct": True, "annotation": "Correct solution."},
             {"name": "Diana", "solution": "def sum_even(numbers)  # Missing colon here\n    total = 0\n    for x in numbers:\n        if x % 2 == 0:\n            total += x\n    return total", "correct": False, "annotation": "Syntax error: Missing colon in function definition."},
             {"name": "Evan", "solution": "def sum_even(numbers):\n    count = 0\n    for num in numbers:\n        if num % 2 == 0:\n            count += 1  # Wrong: should add the number, not count it.\n    return count", "correct": False, "annotation": "Counts even numbers instead of summing their values."},
             {"name": "Fiona", "solution": "def sum_even(numbers):\n    total = 0\n    for num in numbers:\n        if num > 0 and num % 2 == 0:  # Faulty: Excludes negative even numbers.\n            total += num\n    return total", "correct": False, "annotation": "Only sums positive even numbers, ignoring negatives."},
@@ -101,8 +102,10 @@ def seed_data():
         for s in students:
             student = Student(name=s["name"], solution=s["solution"], correct=s["correct"], annotation= s["annotation"])
             db.session.add(student)
+        db.session.commit()  # Commit the changes to the database
+        return "Data seeded!"
 
-    db.session.commit()
+    return "Data already exists in the database."
     
 @app.route("/query", methods=['GET', 'POST'])
 def query():
@@ -205,6 +208,7 @@ def delete_students():
     Student.query.delete()
     db.session.commit()
     return "All students deleted from the database!"
+
 if __name__ == "__main__":
     create_tables()
     app.run(debug=True)
