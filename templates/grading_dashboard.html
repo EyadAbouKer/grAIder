@@ -68,15 +68,19 @@
         });
     </script>
       <div class="p-4 overflow-y-auto flex-grow">
+        <button class="mb-4 bg-indigo-700 hover:bg-indigo-800 text-white px-4 py-2 rounded-lg"
+                onclick="evaluateAllStudents()">
+          Evaluate All Students
+        </button>
         <ul class="space-y-4">
           {% for student in students %}
           <li class="border rounded-lg p-4 hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-700">
             <div class="flex justify-between items-center">
               <h4 class="font-medium flex items-center">
                 <span class="mr-2">{{ student.name }}</span>
-                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full {% if student.correct %}bg-green-100 text-green-600{% else %}bg-red-100 text-red-600{% endif %}">
-                  {% if student.correct %}✓{% else %}✗{% endif %}
-                </span>
+                
+                <span id="status-{{ loop.index }}" class="hidden inline-flex items-center justify-center w-6 h-6 rounded-full"></span>
+
               </h4>
               <button class="text-blue-500 hover:text-blue-700 hover:underline focus:outline-none transition-colors duration-300" 
                       onclick="toggleCode('student-{{ loop.index }}', this)">
@@ -91,13 +95,11 @@
                 Run Code
               </button>
               <div id="result-{{ loop.index }}" class="mt-2 text-sm"></div>
-            </div>
-          
-            <div>
-              <h4 class="text-lg font-medium mb-2">Evaluation</h4>
-              <pre class="bg-gray-100 dark:bg-gray-800 p-2 rounded text-sm">{{ student.evaluation }}</pre>
-              <h4 class="text-lg font-medium mb-2">Scores</h4>
-              <pre class="bg-gray-100 dark:bg-gray-800 p-2 rounded text-sm">{{ student.scores }}</pre>
+
+              <button class="mt-2 bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg transition-colors duration-300"
+                      onclick="evaluateStudent('{{ student.name }}', {{ loop.index }})">
+                Evaluate
+              </button>
             </div>
            
         </li>
@@ -140,8 +142,6 @@
               <p>Run a student's code to see results here</p>
             </div>
           </div>
-          <!-- Debugging message -->
-          <p id="debug-message" class="text-red-500 hidden"></p>
         </div>
       </div>
     </div>
@@ -172,7 +172,6 @@
   async function runCode(studentName, resultId) {
     const resultElement = document.getElementById(resultId);
     const resultsContainer = document.getElementById("results-output");
-    const debugMessage = document.getElementById("debug-message");
     
     // Show loading animation
     resultsContainer.innerHTML = `
@@ -181,9 +180,8 @@
       </div>
     `;
     resultElement.textContent = "Running...";
-    debugMessage.textContent = `Sending request to /run_code for student: ${studentName}`;
-    debugMessage.classList.remove('hidden');
 
+  
     try {
       const response = await fetch("/run_code", {
         method: "POST",
@@ -283,10 +281,7 @@
       
       detailsHTML += `</ul>`;
       resultsContainer.innerHTML = detailsHTML;
-      debugMessage.textContent = "Execution completed successfully.";
-      setTimeout(() => {
-        debugMessage.classList.add('hidden');
-      }, 3000);
+      
     } catch (error) {
       console.error("Error during execution:", error);
       resultElement.textContent = "Error running code.";
@@ -302,9 +297,65 @@
             </div>
           </div>
         </div>`;
-      debugMessage.textContent = `Error: ${error.message}`;
     }
   }
+
+
+  async function evaluateStudent(studentName, index) {
+  // Find the container where to show evaluation; assume you want to update the Evaluation <pre> in the student's block
+  const evaluationContainer = document.querySelector(`#student-${index} pre + p`);
+  // Optionally, you can create a dedicated <div> for evaluation results
+  evaluationContainer.textContent = "Evaluating...";
+  
+  try {
+    const response = await fetch("/evaluate_student", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ student_name: studentName })
+    });
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    
+    const result = await response.json();
+    // Update the UI immediately with an animation
+    
+    evaluationContainer.innerHTML = `<strong>Evaluation:</strong><br>${result.evaluation.replace(/\n/g, "<br>")}<br>
+      <strong>Scores:</strong> ${JSON.stringify(result.scores)}`;
+    evaluationContainer.classList.add("animate__fadeIn"); // (using your CSS animation or a framework like animate.css)
+
+    // Update correctness indicator dynamically based on total score threshold (e.g., 50)
+    const statusEl = document.getElementById(`status-${index}`);
+    statusEl.classList.remove("hidden");
+    if (result.scores.total >= 50) {
+      statusEl.className += " bg-green-100 text-green-600";
+      statusEl.innerHTML = "✓";
+    } else {
+      statusEl.className += " bg-red-100 text-red-600";
+      statusEl.innerHTML = "✗";
+    }
+    statusEl.style.display = "inline-flex";
+
+  } catch (error) {
+    evaluationContainer.textContent = `Error: ${error.message}`;
+  }
+}
+
+async function evaluateAllStudents() {
+
+  // Get an array of student names and corresponding indices.
+  const studentButtons = document.querySelectorAll('[onclick^="evaluateStudent("]');
+  
+  // Loop through them sequentially.
+  for (let btn of studentButtons) {
+    // Simulate click (or manually call the function)
+    // Assuming the button onclick has parameters: evaluateStudent('StudentName', index)
+    // Extract these parameters from a data attribute if needed.
+    // For simplicity, we can trigger the click:
+    btn.click();
+    // Wait a bit before processing the next to allow animation; adjust delay as needed.
+    await new Promise(resolve => setTimeout(resolve, 1500));
+  }
+}
 </script>
 
 <style>

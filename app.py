@@ -2,10 +2,10 @@ from flask import Flask, render_template, request, jsonify, request, jsonify
 from dotenv import load_dotenv
 import os
 import json
+import ast
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from sqlalchemy.sql import text
-from gemeniapi import query_gemini, studentEvaluator
+from gemeniapi import query_gemini
 from flask_sqlalchemy import SQLAlchemy
 
 load_dotenv()  # Load environment variables from .env file
@@ -31,6 +31,8 @@ assignment = {
         "Error Handling": 10
     }
 }
+
+
 class Student(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -120,6 +122,7 @@ def query():
             data = request.get_json()
             if not data or 'prompt' not in data:
                 return jsonify({"error": "No prompt provided"}), 400
+            
             prompt = data['prompt']
             
         response = query_gemini(prompt, api_key)
@@ -171,10 +174,13 @@ def run_code():
         function = exec_globals[function_name]
 
         for test_case in test_cases:
-            input_data = eval(test_case["input"])
+            input_data = ast.literal_eval(test_case["input"])
             expected_output = test_case["expected"]
+            
 
             try:
+                print(f"[run_code] Testing student '{student_name}' solution...")
+                print(f"[run_code] Test case: {test_case['input']} expected: {expected_output}")
                 # Call the student's function
                 actual_output = function(input_data)
                 if actual_output == expected_output:
@@ -201,6 +207,46 @@ def run_code():
         results["details"] = [{"input": "N/A", "status": "Error", "error": str(e)}]
 
     return jsonify(results)
+
+@app.route("/evaluate_student", methods=["POST"])
+def evaluate_student():
+    data = request.get_json()
+    student_name = data.get("student_name")
+    student = Student.query.filter_by(name=student_name).first()
+    if not student:
+        print(f"[evaluate_student] Student '{student_name}' not found.")
+        return jsonify({"error": "Student not found."}), 404
+
+    prompt = f"""Assignment: {assignment['title']}
+Description: {assignment['description']}
+
+Student Name: {student.name}
+Student Solution:
+{student.solution}
+
+Rubric: {assignment['rubric']}
+
+Please evaluate the solution based on the above rubric and return a JSON response exactly formatted as:
+{{
+  "scores": {{
+      "total": <total score (0-100)>,
+      "correctness": <score out of 50>,
+      "edge_cases": <score out of 20>,
+      "code_quality": <score out of 20>,
+      "error_handling": <score out of 10>
+  }},
+  "evaluation": "<short explanation>"
+}}"""
+    print("[evaluate_student] Prompt sent to Gemini:\n", prompt)
+    response = query_gemini(prompt, api_key)
+    print("[evaluate_student] Raw response from Gemini:", response)
+    try:
+        res_json = json.loads(response)
+    except Exception as e:
+        print("[evaluate_student] JSON parse error:", e)
+        return jsonify({"error": f"Invalid JSON response: {str(e)}"}), 500
+    return jsonify(res_json)
+
 
 @app.route('/delete')   
 def delete_students():
