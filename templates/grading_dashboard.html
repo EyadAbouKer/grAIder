@@ -3,19 +3,19 @@
 {% block title %}Grading Dashboard{% endblock %}
 
 {% block content %}
-<div class="container mx-auto p-4">
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="container mx-auto p-2">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
     
     <!-- Top Left: Rubric Section -->
     <div class="md:col-span-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg transform hover:scale-102 transition-all duration-300 overflow-hidden">
       <div class="bg-blue-600 text-white p-1">
         <h2 class="text-lg font-medium">Assignment: {{ assignment.title }}</h2>
       </div>
-      <div class="p-4">
-        <p class="mb-4 text-sm">{{ assignment.description }}</p>
+      <div class="p-3">
+        <p class="mb-3 text-sm">{{ assignment.description }}</p>
         
-        <h3 class="text-lg font-medium mb-2 border-b pb-2">Rubric</h3>
-        <ul class="space-y-2 text-sm">
+        <h3 class="text-lg font-medium mb-2 border-b pb-1">Rubric</h3>
+        <ul class="space-y-1 text-sm">
           {% for criterion, weight in assignment.rubric.items() %}
           <li class="flex justify-between items-center">
             <span>{{ criterion }}</span>
@@ -27,82 +27,53 @@
     </div>
 
     <!-- Top Right: Students Section -->
-    <div class="md:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg h-96 flex flex-col overflow-hidden">
+    <div class="md:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg flex flex-col overflow-hidden" id="students-container">
       <div class="bg-green-600 text-white p-1">
         <h2 class="text-lg font-medium">Student Solutions</h2>
-      </div><button class="bg-blue-500 text-white py-2 px-4 rounded-lg" id="showPopupBtn">Show Popup</button>
-
-    <!-- Overlay -->
-    <div class="fixed inset-0 bg-black bg-opacity-50 hidden" id="overlay"></div>
-
-    <!-- Popup -->
-    <div class="fixed inset-0 flex items-center justify-center hidden" id="popup">
-        <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
-            <h2 class="text-xl font-semibold mb-4">This is a popup!</h2>
-            <button class="bg-red-500 text-white py-2 px-4 rounded-lg" id="closePopupBtn">Close</button>
+      </div>
+      
+      <div class="p-3 overflow-y-auto flex-grow" style="max-height: 350px;">
+        
+        <div>
+          <button class="bg-blue-500 text-white py-2 px-4 rounded-lg" id="showPopupBtn">Show Popup</button>
+          
+          <!-- Overlay -->
+          <div class="fixed inset-0 bg-black bg-opacity-50 hidden" id="overlay"></div>
+          
+          <!-- Popup -->
+          <div class="fixed inset-0 flex items-center justify-center hidden" id="popup">
+            <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
+              <h2 class="text-xl font-semibold mb-4">This is a popup!</h2>
+              <button class="bg-red-500 text-white py-2 px-4 rounded-lg" id="closePopupBtn">Close</button>
+            </div>
+          </div>
         </div>
-    </div>
-
-    <script>
-        // Get elements
-        const showPopupBtn = document.getElementById('showPopupBtn');
-        const closePopupBtn = document.getElementById('closePopupBtn');
-        const popup = document.getElementById('popup');
-        const overlay = document.getElementById('overlay');
-
-        // Show popup when button is clicked
-        showPopupBtn.addEventListener('click', () => {
-            popup.classList.remove('hidden');
-            overlay.classList.remove('hidden');
-        });
-
-        // Close popup when close button or overlay is clicked
-        closePopupBtn.addEventListener('click', () => {
-            popup.classList.add('hidden');
-            overlay.classList.add('hidden');
-        });
-
-        overlay.addEventListener('click', () => {
-            popup.classList.add('hidden');
-            overlay.classList.add('hidden');
-        });
-    </script>
-      <div class="p-4 overflow-y-auto flex-grow">
-        <button class="mb-4 bg-indigo-700 hover:bg-indigo-800 text-white px-4 py-2 rounded-lg"
+        
+        
+        <button class="mb-3 bg-indigo-700 hover:bg-indigo-800 text-white px-4 py-2 rounded-lg"
                 onclick="evaluateAllStudents()">
           Evaluate All Students
         </button>
-        <ul class="space-y-4">
+
+        <ul class="space-y-2">
           {% for student in students %}
-          <li class="border rounded-lg p-4 hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-700">
+          <li class="border rounded-lg p-3 hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-700" data-student="{{ student.name }}">
             <div class="flex justify-between items-center">
               <h4 class="font-medium flex items-center">
                 <span class="mr-2">{{ student.name }}</span>
-                
                 <span id="status-{{ loop.index }}" class="hidden inline-flex items-center justify-center w-6 h-6 rounded-full"></span>
-
+                <span id="grade-{{ loop.index }}" class="ml-2 font-bold text-blue-600"></span>
               </h4>
               <button class="text-blue-500 hover:text-blue-700 hover:underline focus:outline-none transition-colors duration-300" 
-                      onclick="toggleCode('student-{{ loop.index }}', this)">
+                      onclick="toggleCode('student-{{ loop.index }}', this, '{{ student.name }}', {{ loop.index }})">
                 Show Solution
               </button>
             </div>
             <div id="student-{{ loop.index }}" class="hidden mt-2 transition-all duration-500 overflow-hidden">
-              <pre class="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg text-sm border border-gray-200 dark:border-gray-600">{{ student.solution }}</pre>
+              <pre class="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg text-sm border border-gray-200 dark:border-gray-600">{{ student.solution }}</pre>
               <p class="text-sm text-gray-600 dark:text-gray-400 mt-2 italic">{{ student.annotation }}</p>
-              <button class="mt-3 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors duration-300 transform hover:scale-105" 
-                      onclick="runCode('{{ student.name }}', 'result-{{ loop.index }}')">
-                Run Code
-              </button>
-              <div id="result-{{ loop.index }}" class="mt-2 text-sm"></div>
-
-              <button class="mt-2 bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg transition-colors duration-300"
-                      onclick="evaluateStudent('{{ student.name }}', {{ loop.index }})">
-                Evaluate
-              </button>
             </div>
-           
-        </li>
+          </li>
           {% endfor %}
         </ul>
       </div>
@@ -113,7 +84,7 @@
       <div class="bg-purple-600 text-white p-1">
         <h2 class="text-lg font-medium">Test Cases</h2>
       </div>
-      <div class="p-4 max-h-64 overflow-y-auto">
+      <div class="p-3 max-h-64 overflow-y-auto">
         <ul class="space-y-2">
           {% for test_case in test_cases %}
           <li class="border-b pb-2 last:border-b-0">
@@ -128,18 +99,25 @@
     </div>
 
     <!-- Bottom Right: Execution Results Section -->
-    <div class="md:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-      <div class="bg-amber-600 text-white p-1">
+    <div class="md:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden" id="results-section">
+      <div class="bg-amber-600 text-white p-1 flex justify-between items-center">
         <h2 class="text-lg font-medium">Execution Results</h2>
+        <div class="flex items-center">
+          <button id="resize-handle" class="text-white hover:bg-amber-700 px-2 py-1 rounded">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7l4-4m0 0l4 4m-4-4v18" />
+            </svg>
+          </button>
+        </div>
       </div>
-      <div id="results-container" class="p-4 max-h-64 overflow-y-auto">
+      <div id="results-container" class="p-3 overflow-y-auto" style="min-height: 150px; max-height: 400px;">
         <div id="results-output" class="mt-2">
           <div class="flex items-center justify-center h-32 text-gray-400">
             <div class="text-center">
               <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path>
               </svg>
-              <p>Run a student's code to see results here</p>
+              <p>Select a student solution or evaluate all students to see results here</p>
             </div>
           </div>
         </div>
@@ -149,7 +127,39 @@
 </div>
 
 <script>
-  function toggleCode(id, button) {
+  let isResizing = false;
+  let startHeight;
+  let startY;
+  
+  // Resize functionality
+  document.getElementById('resize-handle').addEventListener('mousedown', function(e) {
+    isResizing = true;
+    startHeight = document.getElementById('results-container').offsetHeight;
+    startY = e.clientY;
+    document.addEventListener('mousemove', resize);
+    document.addEventListener('mouseup', stopResize);
+    e.preventDefault();
+  });
+  
+  function resize(e) {
+    if (!isResizing) return;
+    const newHeight = startHeight - (e.clientY - startY);
+    const container = document.getElementById('results-container');
+    
+    // Set constraints to avoid extreme values
+    if (newHeight > 100 && newHeight < 600) {
+      container.style.height = newHeight + 'px';
+    }
+  }
+  
+  function stopResize() {
+    isResizing = false;
+    document.removeEventListener('mousemove', resize);
+    document.removeEventListener('mouseup', stopResize);
+  }
+
+  // Toggle code visibility and update results for the selected student
+  function toggleCode(id, button, studentName, index) {
     const element = document.getElementById(id);
     if (element.classList.contains('hidden')) {
       // Show the element with animation
@@ -159,6 +169,9 @@
         element.style.maxHeight = element.scrollHeight + "px";
       }, 10);
       button.textContent = "Hide Solution";
+      
+      // Update execution results for this student
+      displayStudentResults(studentName, index);
     } else {
       // Hide the element with animation
       element.style.maxHeight = "0px";
@@ -168,9 +181,9 @@
       button.textContent = "Show Solution";
     }
   }
-
-  async function runCode(studentName, resultId) {
-    const resultElement = document.getElementById(resultId);
+  
+  // Display results for selected student
+  async function displayStudentResults(studentName, index) {
     const resultsContainer = document.getElementById("results-output");
     
     // Show loading animation
@@ -179,183 +192,328 @@
         <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     `;
-    resultElement.textContent = "Running...";
-
-  
-    try {
-      const response = await fetch("/run_code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ student_name: studentName })
-      });
-
-      console.log("Response received from backend:", response);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+    
+    // If this student has already been evaluated (has a grade)
+    const gradeEl = document.getElementById(`grade-${index}`);
+    if (gradeEl.textContent.trim()) {
+      try {
+        // Fetch the stored evaluation results for this student
+        const response = await fetch(`/get_student_results?student_name=${encodeURIComponent(studentName)}`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const result = await response.json();
+        
+        // Display the combined evaluation results
+        displayCombinedResults(studentName, result);
+      } catch (error) {
+        resultsContainer.innerHTML = `
+          <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mt-3">
+            <div class="flex">
+              <svg class="w-6 h-6 text-red-600 dark:text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <div>
+                <h3 class="text-red-800 dark:text-red-300 font-medium">Error</h3>
+                <div class="mt-1 text-red-700 dark:text-red-400">
+                  ${error.message}. This student may not have been evaluated yet.
+                </div>
+              </div>
+            </div>
+          </div>`;
       }
-
-      const result = await response.json();
-      console.log("Parsed result from backend:", result);
-
-      resultElement.textContent = `Execution complete: ${result.passed} passed, ${result.failed} failed`;
-      
-      // Create animated results display
-      let detailsHTML = `
-        <div class="mb-4 flex items-center justify-between bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
-          <div class="flex items-center">
-            <span class="font-bold mr-2">Student:</span>
-            <span>${studentName}</span>
+    } else {
+      resultsContainer.innerHTML = `
+        <div class="flex items-center justify-center h-32 text-amber-600">
+          <div class="text-center">
+            <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <p>This student has not been evaluated yet.<br>Click "Evaluate All Students" to assess their work.</p>
           </div>
-          <div class="flex space-x-3">
+        </div>`;
+    }
+  }
+  
+  // Display combined results (AI evaluation + test cases)
+  function displayCombinedResults(studentName, result) {
+    const resultsContainer = document.getElementById("results-output");
+    
+    // Calculate total score based on 50% AI evaluation, 50% test cases
+    const aiScore = result.scores.total || 0;
+    const testScore = result.test_results ? 
+                     (result.test_results.passed / (result.test_results.passed + result.test_results.failed) * 100) || 0 : 0;
+    const finalScore = Math.round((aiScore * 0.5) + (testScore * 0.5));
+    
+    let detailsHTML = `
+      <div class="mb-3 bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-bold">${studentName}</h3>
+          <div class="flex space-x-2 items-center">
+            <div class="bg-blue-600 text-white px-3 py-1 rounded-lg font-bold">
+              ${finalScore}%
+            </div>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+          <div class="bg-white dark:bg-gray-800 p-2 rounded-lg border">
+            <h4 class="font-medium text-blue-700 dark:text-blue-400 mb-1">AI Evaluation (50%)</h4>
+            <div class="flex justify-between items-center mb-1">
+              <span>Score:</span>
+              <span class="font-bold">${aiScore}%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+              <div class="bg-blue-600 h-2.5 rounded-full" style="width: ${aiScore}%"></div>
+            </div>
+          </div>
+          
+          <div class="bg-white dark:bg-gray-800 p-2 rounded-lg border">
+            <h4 class="font-medium text-purple-700 dark:text-purple-400 mb-1">Test Cases (50%)</h4>
+            <div class="flex justify-between items-center mb-1">
+              <span>Score:</span>
+              <span class="font-bold">${testScore.toFixed(1)}%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+              <div class="bg-purple-600 h-2.5 rounded-full" style="width: ${testScore}%"></div>
+            </div>
+          </div>
+        </div>
+    `;
+    
+    // Add AI evaluation details
+    detailsHTML += `
+      <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border mb-3">
+        <h4 class="font-medium text-blue-700 dark:text-blue-400 border-b pb-1 mb-2">AI Evaluation</h4>
+        <div class="text-sm whitespace-pre-line">${result.evaluation}</div>
+        <div class="mt-2 text-sm">
+          <span class="font-medium">Scores: </span>
+          ${Object.entries(result.scores).map(([key, value]) => 
+            `<span class="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded mr-1 mb-1">${key}: ${value}</span>`
+          ).join('')}
+        </div>
+      </div>
+    `;
+    
+    // Add test case results if available
+    if (result.test_results) {
+      detailsHTML += `
+        <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border">
+          <h4 class="font-medium text-purple-700 dark:text-purple-400 border-b pb-1 mb-2">Test Case Results</h4>
+          <div class="flex space-x-3 mb-2">
             <div class="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-3 py-1 rounded-full text-sm flex items-center">
               <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
               </svg>
-              ${result.passed}
+              ${result.test_results.passed} Passed
             </div>
             <div class="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 px-3 py-1 rounded-full text-sm flex items-center">
               <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
               </svg>
-              ${result.failed}
+              ${result.test_results.failed} Failed
             </div>
           </div>
-        </div>
-        <ul class="space-y-2">
       `;
       
-      // Animate each result item
-      for (let i = 0; i < result.details.length; i++) {
-        const detail = result.details[i];
-        const delay = i * 100; // Stagger animations
+      // Add individual test case details with animation
+      if (result.test_results.details && result.test_results.details.length > 0) {
+        detailsHTML += `<ul class="space-y-2 mt-2">`;
         
-        if (detail.status === "Passed") {
-          detailsHTML += `
-            <li class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 opacity-0 transform translate-y-4" 
-                style="animation: fadeInUp 0.5s ease forwards ${delay}ms">
-              <div class="flex items-start">
-                <svg class="w-5 h-5 text-green-600 dark:text-green-400 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-                <div>
-                  <div class="font-medium">Input: ${detail.input}</div>
-                  <div class="text-green-600 dark:text-green-400 text-sm">Passed</div>
-                </div>
-              </div>
-            </li>`;
-        } else if (detail.status === "Failed") {
-          detailsHTML += `
-            <li class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 opacity-0 transform translate-y-4" 
-                style="animation: fadeInUp 0.5s ease forwards ${delay}ms">
-              <div class="flex items-start">
-                <svg class="w-5 h-5 text-red-600 dark:text-red-400 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-                <div>
-                  <div class="font-medium">Input: ${detail.input}</div>
-                  <div class="text-red-600 dark:text-red-400 text-sm">Failed</div>
-                  <div class="text-xs mt-1">
-                    <span class="font-medium">Expected:</span> ${detail.expected}
-                    <span class="font-medium ml-2">Got:</span> ${detail.actual}
+        for (let i = 0; i < result.test_results.details.length; i++) {
+          const detail = result.test_results.details[i];
+          const delay = i * 100; // Stagger animations
+          
+          if (detail.status === "Passed") {
+            detailsHTML += `
+              <li class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-2 opacity-0 transform translate-y-4" 
+                  style="animation: fadeInUp 0.5s ease forwards ${delay}ms">
+                <div class="flex items-start">
+                  <svg class="w-5 h-5 text-green-600 dark:text-green-400 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                  <div class="overflow-hidden">
+                    <div class="font-medium truncate">Input: ${detail.input}</div>
+                    <div class="text-green-600 dark:text-green-400 text-sm">Passed</div>
                   </div>
                 </div>
-              </div>
-            </li>`;
-        } else if (detail.status === "Error" || detail.status === "Syntax Error") {
-          detailsHTML += `
-            <li class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 opacity-0 transform translate-y-4" 
-                style="animation: fadeInUp 0.5s ease forwards ${delay}ms">
-              <div class="flex items-start">
-                <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </li>`;
+          } else if (detail.status === "Failed") {
+            detailsHTML += `
+              <li class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-2 opacity-0 transform translate-y-4" 
+                  style="animation: fadeInUp 0.5s ease forwards ${delay}ms">
+                <div class="flex items-start">
+                  <svg class="w-5 h-5 text-red-600 dark:text-red-400 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                  <div class="overflow-hidden">
+                    <div class="font-medium truncate">Input: ${detail.input}</div>
+                    <div class="text-red-600 dark:text-red-400 text-sm">Failed</div>
+                    <div class="text-xs mt-1">
+                      <span class="font-medium">Expected:</span> <span class="truncate">${detail.expected}</span>
+                      <span class="font-medium ml-2">Got:</span> <span class="truncate">${detail.actual}</span>
+                    </div>
+                  </div>
+                </div>
+              </li>`;
+          } else if (detail.status === "Error" || detail.status === "Syntax Error") {
+            detailsHTML += `
+              <li class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-2 opacity-0 transform translate-y-4" 
+                  style="animation: fadeInUp 0.5s ease forwards ${delay}ms">
+                <div class="flex items-start">
+                  <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                  </svg>
+                  <div>
+                    <div class="font-medium">Error</div>
+                    <div class="text-amber-600 dark:text-amber-400 text-sm break-all">${detail.error}</div>
+                  </div>
+                </div>
+              </li>`;
+          }
+        }
+        
+        detailsHTML += `</ul>`;
+      }
+      
+      detailsHTML += `</div>`;
+    }
+    
+    resultsContainer.innerHTML = detailsHTML;
+  }
+
+  // Evaluate all students function
+  async function evaluateAllStudents() {
+    const studentItems = document.querySelectorAll('li[data-student]');
+    const resultsContainer = document.getElementById("results-output");
+    
+    // Clear results container and show main loading indicator
+    resultsContainer.innerHTML = `
+      <div class="flex items-center justify-center h-32">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <span class="ml-3 font-medium">Initializing evaluation...</span>
+      </div>
+    `;
+    
+    // Process each student
+    let index = 1;
+    for (let li of studentItems) {
+      const studentName = li.getAttribute('data-student');
+      
+      // Update loading indicator with current student
+      resultsContainer.innerHTML = `
+        <div class="flex items-center justify-center h-32 flex-col">
+          <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-2"></div>
+          <span class="font-medium">Evaluating ${studentName}...</span>
+          <span class="text-sm text-gray-500 mt-1">(${index} of ${studentItems.length})</span>
+        </div>
+      `;
+
+      try {
+        // Evaluate student (both AI and test cases)
+        const response = await fetch("/evaluate_student", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ student_name: studentName })
+        });
+        
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const result = await response.json();
+        
+        // Calculate final score (50% AI, 50% test cases)
+        const aiScore = result.scores.total || 0;
+        const testScore = result.test_results ? 
+                        (result.test_results.passed / (result.test_results.passed + result.test_results.failed) * 100) || 0 : 0;
+        const finalScore = Math.round((aiScore * 0.5) + (testScore * 0.5));
+        
+        // Update the grade display next to the student's name
+        const gradeEl = document.getElementById(`grade-${index}`);
+        gradeEl.textContent = finalScore + "%";
+        
+        // Update status indicator
+        const statusEl = document.getElementById(`status-${index}`);
+        statusEl.classList.remove("hidden");
+        if (finalScore >= 70) {
+          statusEl.className = "inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-600";
+          statusEl.innerHTML = "✓";
+        } else if (finalScore >= 50) {
+          statusEl.className = "inline-flex items-center justify-center w-6 h-6 rounded-full bg-yellow-100 text-yellow-600";
+          statusEl.innerHTML = "!";
+        } else {
+          statusEl.className = "inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-600";
+          statusEl.innerHTML = "✗";
+        }
+        
+        // If this is the last student, display their full results
+        if (index === studentItems.length) {
+          displayCombinedResults(studentName, result);
+        }
+        
+      } catch (error) {
+        console.error(`Error evaluating ${studentName}:`, error);
+        
+        // Show error in results container if this is the last student
+        if (index === studentItems.length) {
+          resultsContainer.innerHTML = `
+            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mt-3">
+              <div class="flex">
+                <svg class="w-6 h-6 text-red-600 dark:text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
                 <div>
-                  <div class="font-medium">Error</div>
-                  <div class="text-amber-600 dark:text-amber-400 text-sm break-all">${detail.error}</div>
+                  <h3 class="text-red-800 dark:text-red-300 font-medium">Error During Evaluation</h3>
+                  <div class="mt-1 text-red-700 dark:text-red-400">${error.message}</div>
                 </div>
               </div>
-            </li>`;
+            </div>`;
         }
       }
       
-      detailsHTML += `</ul>`;
-      resultsContainer.innerHTML = detailsHTML;
-      
-    } catch (error) {
-      console.error("Error during execution:", error);
-      resultElement.textContent = "Error running code.";
-      resultsContainer.innerHTML = `
-        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mt-4">
-          <div class="flex">
-            <svg class="w-6 h-6 text-red-600 dark:text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <div>
-              <h3 class="text-red-800 dark:text-red-300 font-medium">Execution Error</h3>
-              <div class="mt-1 text-red-700 dark:text-red-400">${error.message}</div>
+      index++;
+      // Short delay between processing students to avoid overwhelming the server
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    // Show final summary when all students are evaluated
+    if (studentItems.length > 1) {
+      const summary = document.createElement('div');
+      summary.className = 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 mt-3 animate__fadeIn';
+      summary.style.animation = 'fadeInUp 0.5s ease forwards';
+      summary.innerHTML = `
+        <div class="flex items-center">
+          <svg class="w-6 h-6 text-green-600 dark:text-green-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <div>
+            <h3 class="text-green-800 dark:text-green-300 font-medium">Evaluation Complete</h3>
+            <div class="mt-1 text-green-700 dark:text-green-400">
+              All ${studentItems.length} students have been evaluated. Click on a student's "Show Solution" button to see detailed results.
             </div>
           </div>
-        </div>`;
+        </div>
+      `;
+      resultsContainer.prepend(summary);
     }
   }
 
+  const showPopupBtn = document.getElementById('showPopupBtn');
+  const closePopupBtn = document.getElementById('closePopupBtn');
+  const popup = document.getElementById('popup');
+  const overlay = document.getElementById('overlay');
 
-  async function evaluateStudent(studentName, index) {
-  // Find the container where to show evaluation; assume you want to update the Evaluation <pre> in the student's block
-  const evaluationContainer = document.querySelector(`#student-${index} pre + p`);
-  // Optionally, you can create a dedicated <div> for evaluation results
-  evaluationContainer.textContent = "Evaluating...";
-  
-  try {
-    const response = await fetch("/evaluate_student", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ student_name: studentName })
-    });
+  showPopupBtn.addEventListener('click', () => {
+    popup.classList.remove('hidden');
+    overlay.classList.remove('hidden');
+  });
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    
-    const result = await response.json();
-    // Update the UI immediately with an animation
-    
-    evaluationContainer.innerHTML = `<strong>Evaluation:</strong><br>${result.evaluation.replace(/\n/g, "<br>")}<br>
-      <strong>Scores:</strong> ${JSON.stringify(result.scores)}`;
-    evaluationContainer.classList.add("animate__fadeIn"); // (using your CSS animation or a framework like animate.css)
+  closePopupBtn.addEventListener('click', () => {
+    popup.classList.add('hidden');
+    overlay.classList.add('hidden');
+  });
 
-    // Update correctness indicator dynamically based on total score threshold (e.g., 50)
-    const statusEl = document.getElementById(`status-${index}`);
-    statusEl.classList.remove("hidden");
-    if (result.scores.total >= 50) {
-      statusEl.className += " bg-green-100 text-green-600";
-      statusEl.innerHTML = "✓";
-    } else {
-      statusEl.className += " bg-red-100 text-red-600";
-      statusEl.innerHTML = "✗";
-    }
-    statusEl.style.display = "inline-flex";
+  overlay.addEventListener('click', () => {
+    popup.classList.add('hidden');
+    overlay.classList.add('hidden');
+  });
 
-  } catch (error) {
-    evaluationContainer.textContent = `Error: ${error.message}`;
-  }
-}
-
-async function evaluateAllStudents() {
-
-  // Get an array of student names and corresponding indices.
-  const studentButtons = document.querySelectorAll('[onclick^="evaluateStudent("]');
-  
-  // Loop through them sequentially.
-  for (let btn of studentButtons) {
-    // Simulate click (or manually call the function)
-    // Assuming the button onclick has parameters: evaluateStudent('StudentName', index)
-    // Extract these parameters from a data attribute if needed.
-    // For simplicity, we can trigger the click:
-    btn.click();
-    // Wait a bit before processing the next to allow animation; adjust delay as needed.
-    await new Promise(resolve => setTimeout(resolve, 1500));
-  }
-}
 </script>
 
 <style>
@@ -384,7 +542,7 @@ async function evaluateAllStudents() {
   
   /* Elegant scrollbar */
   .overflow-y-auto::-webkit-scrollbar {
-    width: 8px;
+    width: 6px;
   }
   
   .overflow-y-auto::-webkit-scrollbar-track {
@@ -404,5 +562,173 @@ async function evaluateAllStudents() {
   .dark .overflow-y-auto::-webkit-scrollbar-thumb {
     background-color: rgba(255, 255, 255, 0.2);
   }
+  
+  /* Resize cursor */
+  #resize-handle {
+    cursor: ns-resize;
+  }
+  
+  /* Student status indicators */
+  #students-container [id^="status-"] {
+    transition: all 0.3s ease;
+  }
+
+    /* Animations */
+    @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(-10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  /* Hover effects */
+  .hover\:scale-102:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Smooth transitions */
+  .transition-all {
+    transition: all 0.3s ease-in-out;
+  }
+
+  /* Dynamic grade animation */
+  #grade-container {
+    animation: slideIn 0.5s ease-out;
+  }
+
+  /* Results container animations */
+  .results-fade-in {
+    animation: fadeInUp 0.5s ease-out;
+  }
+
+  /* Elegant scrollbar */
+  .overflow-y-auto::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .overflow-y-auto::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+
+  .overflow-y-auto::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+  }
+
+  .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+
+  .dark .overflow-y-auto::-webkit-scrollbar-track {
+    background: #2d3748;
+  }
+
+  .dark .overflow-y-auto::-webkit-scrollbar-thumb {
+    background: #4a5568;
+  }
+
+  /* Card animations */
+  .card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+  }
+
+  /* Solution toggle animation */
+  .solution-container {
+    transition: max-height 0.5s ease-in-out, opacity 0.3s ease-in-out;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+  }
+
+  .solution-container.show {
+    max-height: 1000px;
+    opacity: 1;
+  }
+
+  /* Grade badge animation */
+  .grade-badge {
+    transition: all 0.3s ease;
+    transform-origin: center;
+  }
+
+  .grade-badge.updating {
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+
+  /* Status indicator animation */
+  .status-indicator {
+    transition: all 0.3s ease;
+  }
+
+  .status-indicator.success {
+    animation: successPop 0.5s ease-out;
+  }
+
+  @keyframes successPop {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+
+  /* Loading spinner */
+  .spinner {
+    border: 3px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top: 3px solid #3498db;
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Dark mode adjustments */
+  .dark .card-hover:hover {
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+  }
+
+  .dark .spinner {
+    border-color: rgba(255, 255, 255, 0.1);
+    border-top-color: #60a5fa;
+  }
+
+  /* Force full-width container with no padding or margin */
+  .container {
+    width: 100%;
+    max-width: 100%;
+  }
+
 </style>
 {% endblock %}
