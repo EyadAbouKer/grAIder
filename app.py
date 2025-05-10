@@ -378,5 +378,6 @@ def delete_students():
     return "All students deleted from the database!"
 
 if __name__ == "__main__":
-    create_tables()
+    with app.app_context():
+        create_tables()
     app.run(debug=True)
