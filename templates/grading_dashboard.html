@@ -3,7 +3,7 @@
 {% block title %}Grading Dashboard{% endblock %}
 
 {% block content %}
-<div class="container mx-auto p-2">
+<div class="container mx-auto p-2 overflow-hidden">
   <div class="grid grid-cols-1 md:grid-cols-3 gap-3" id="main-grid">
     <!-- Left Sidebar: Rubric and Test Cases -->
     <div id="left-sidebar" class="space-y-3">
@@ -1079,19 +1079,21 @@ document.addEventListener('DOMContentLoaded', function() {
     margin: 0;
     padding: 0;
     height: 100vh;
-    overflow: hidden;
+    overflow-x: hidden;
   }
 
   .container {
     height: 100vh;
     max-height: 100vh;
-    overflow: hidden;
-    padding: 0 !important;
+    overflow-x: hidden;
+    padding: 8px !important;
+    box-sizing: border-box;
   }
 
   #main-grid {
-    height: 100vh;
+    height: calc(100vh - 16px);
     overflow: hidden;
+    max-width: 100%;
   }
 
   /* Ensure scrollbars only appear within contained elements */
@@ -1134,6 +1136,7 @@ document.addEventListener('DOMContentLoaded', function() {
     flex-direction: column;
     height: 100vh;
     overflow-y: hidden;
+    max-width: 100%;
   }
 
   /* Student container */
@@ -1141,11 +1144,15 @@ document.addEventListener('DOMContentLoaded', function() {
     flex: 1;
     max-height: 35vh;
     overflow-y: auto;
+    overflow-x: hidden;
+    width: 100%;
   }
 
   /* Results container */
   #results-section {
     flex: 2;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   #results-container {
