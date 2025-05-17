@@ -1025,6 +1025,26 @@ def save_grading_result():
     
     return jsonify({"message": "Grading result saved successfully"})
 
+@app.route("/update_assignment_description", methods=["POST"])
+def update_assignment_description():
+    data = request.get_json()
+    assignment_id = data.get("assignment_id")
+    description = data.get("description")
+    
+    if not assignment_id or not description:
+        return jsonify({"error": "Assignment ID and description are required"}), 400
+    
+    # Get the assignment
+    assignment = Assignment.query.get(assignment_id)
+    if not assignment:
+        return jsonify({"error": "Assignment not found"}), 404
+    
+    # Update the description
+    assignment.description = description
+    db.session.commit()
+    
+    return jsonify({"message": "Assignment description updated successfully"}), 200
+
 @app.route("/generate_test_cases", methods=["POST"])
 def generate_test_cases():
     data = request.get_json()

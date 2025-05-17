@@ -34,9 +34,41 @@
     <!-- Left Column: Assignment Details -->
     <div class="lg:col-span-1">
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
-        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4 border-b pb-2">Description</h2>
-        <div class="prose dark:prose-invert max-w-none">
+        <div class="flex justify-between items-center mb-4 border-b pb-2">
+          <h2 class="text-xl font-bold text-gray-800 dark:text-white">Description</h2>
+          <button 
+            id="editDescriptionBtn" 
+            class="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium"
+          >
+            <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+            </svg>
+            Edit
+          </button>
+        </div>
+        <div id="descriptionDisplay" class="prose dark:prose-invert max-w-none">
           {{ assignment.description|safe }}
+        </div>
+        <div id="descriptionForm" class="hidden">
+          <textarea 
+            id="descriptionEditor" 
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-black dark:text-white dark:bg-gray-700"
+            rows="8"
+          >{{ assignment.description }}</textarea>
+          <div class="flex justify-end mt-3 space-x-2">
+            <button 
+              id="cancelEditBtn"
+              class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-white text-sm font-medium py-2 px-4 rounded-lg"
+            >
+              Cancel
+            </button>
+            <button 
+              id="saveDescriptionBtn"
+              class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-lg"
+            >
+              Save Changes
+            </button>
+          </div>
         </div>
       </div>
 
@@ -505,5 +537,68 @@
       }, 500);
     }, 3000);
   }
+  
+  // Description editing
+  const editDescriptionBtn = document.getElementById("editDescriptionBtn");
+  const cancelEditBtn = document.getElementById("cancelEditBtn");
+  const saveDescriptionBtn = document.getElementById("saveDescriptionBtn");
+  const descriptionDisplay = document.getElementById("descriptionDisplay");
+  const descriptionForm = document.getElementById("descriptionForm");
+  const descriptionEditor = document.getElementById("descriptionEditor");
+  
+  // Show edit form
+  editDescriptionBtn.addEventListener("click", function() {
+    descriptionDisplay.classList.add("hidden");
+    descriptionForm.classList.remove("hidden");
+    descriptionEditor.focus();
+  });
+  
+  // Cancel editing
+  cancelEditBtn.addEventListener("click", function() {
+    descriptionForm.classList.add("hidden");
+    descriptionDisplay.classList.remove("hidden");
+    // Reset to original content
+    descriptionEditor.value = descriptionDisplay.innerHTML.trim();
+  });
+  
+  // Save description
+  saveDescriptionBtn.addEventListener("click", function() {
+    const newDescription = descriptionEditor.value.trim();
+    
+    if (!newDescription) {
+      showMessage("Description cannot be empty", "error");
+      return;
+    }
+    
+    fetch("/update_assignment_description", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        assignment_id: {{ assignment.id }},
+        description: newDescription
+      })
+    })
+    .then(response => {
+      if (!response.ok) {
+        return response.json().then(data => {
+          throw new Error(data.error || "Error updating description");
+        });
+      }
+      return response.json();
+    })
+    .then(data => {
+      // Update the displayed description
+      descriptionDisplay.innerHTML = newDescription;
+      
+      // Hide the form
+      descriptionForm.classList.add("hidden");
+      descriptionDisplay.classList.remove("hidden");
+      
+      showMessage("Description updated successfully", "success");
+    })
+    .catch(error => {
+      showMessage(`Error: ${error.message}`, "error");
+    });
+  });
 </script>
 {% endblock %} 
