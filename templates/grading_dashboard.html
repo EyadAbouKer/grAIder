@@ -24,6 +24,16 @@
             </li>
             {% endfor %}
           </ul>
+          
+          <!-- Add back button when viewing specific assignment -->
+          <div id="back-button-container" class="mt-4 hidden">
+            <a href="#" class="inline-flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+              <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+              </svg>
+              Back to Assignment
+            </a>
+          </div>
         </div>
       </div>
       
@@ -73,13 +83,26 @@
             <div class="flex justify-between items-center">
               <h4 class="font-medium flex items-center">
                 <span class="mr-2">{{ student.name }}</span>
-                <span id="status-{{ loop.index }}" class="hidden inline-flex items-center justify-center w-6 h-6 rounded-full"></span>
-                <span id="grade-{{ loop.index }}" class="ml-2 font-bold text-blue-600"></span>
+                <span id="status-{{ loop.index }}" class="{% if student.correct %}inline-flex{% else %}hidden{% endif %} items-center justify-center w-6 h-6 rounded-full {% if student.correct %}bg-green-100 text-green-600{% endif %}">
+                  {% if student.correct %}✓{% endif %}
+                </span>
+                <span id="grade-{{ loop.index }}" class="ml-2 font-bold text-blue-600">
+                  {% if student.correct %}Graded{% endif %}
+                </span>
               </h4>
-              <button class="text-blue-500 hover:text-blue-700 hover:underline focus:outline-none transition-colors duration-300" 
-                      onclick="toggleCode('student-{{ loop.index }}', this, '{{ student.name }}', '{{ loop.index }}')">
-                Show Solution
-              </button>
+              <div class="flex items-center space-x-2">
+                <button class="text-blue-500 hover:text-blue-700 hover:underline focus:outline-none transition-colors duration-300" 
+                        onclick="toggleCode('student-{{ loop.index }}', this, '{{ student.name }}', '{{ loop.index }}')">
+                  Show Solution
+                </button>
+                <button class="{% if student.correct %}text-yellow-500 hover:text-yellow-700{% else %}text-green-500 hover:text-green-700{% endif %} hover:underline focus:outline-none transition-colors duration-300 grade-student-btn"
+                        data-name="{{ student.name }}" 
+                        data-index="{{ loop.index }}"
+                        data-is-regrading="{{ student.correct|lower }}"
+                        id="grade-btn-{{ loop.index }}">
+                  {% if student.correct %}Regrade{% else %}Grade{% endif %}
+                </button>
+              </div>
             </div>
             <div id="student-{{ loop.index }}" class="hidden mt-2 transition-all duration-500 overflow-hidden">
               <pre class="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg text-sm border border-gray-200 dark:border-gray-600">{{ student.solution }}</pre>
@@ -192,6 +215,9 @@
 
     const debugMessage = document.getElementById("debug-message");
     
+    // Get assignment_id from global variable
+    const assignmentId = window.assignmentId;
+    
     // Show loading animation
     resultsContainer.innerHTML = `
       <div class="flex items-center justify-center h-32">
@@ -204,7 +230,7 @@
     if (gradeEl.textContent.trim()) {
       try {
         // Fetch the stored evaluation results for this student
-        const response = await fetch(`/get_student_results?student_name=${encodeURIComponent(studentName)}`);
+        const response = await fetch(`/get_student_results?student_name=${encodeURIComponent(studentName)}&assignment_id=${assignmentId || ''}`);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const result = await response.json();
         evaluationCache[studentName] = result;
@@ -245,7 +271,7 @@
     const resultsContainer = document.getElementById("results-output");
     
     // Calculate total score based on 50% AI evaluation, 50% test cases
-    const aiScore = result.scores.total || 0;
+    const aiScore = result.scores ? (result.scores.total || 0) : 0;
     const testScore = result.test_results ? 
                      (result.test_results.passed / (result.test_results.passed + result.test_results.failed) * 100) || 0 : 0;
     const finalScore = Math.round((aiScore * 0.5) + (testScore * 0.5));
@@ -293,8 +319,10 @@
         <div class="text-sm whitespace-pre-line">${result.evaluation}</div>
         <div class="mt-2 text-sm">
           <span class="font-medium">Scores: </span>
-          ${Object.entries(result.scores).map(([key, value]) => 
-            `<span class="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded mr-1 mb-1">${key}: ${value}</span>`
+          ${(result.scores ? Object.entries(result.scores) : [])
+            .filter(([key]) => key !== 'total')
+            .map(([category, score]) => `
+              <span class="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded mr-1 mb-1">${category}: ${score}</span>`
           ).join('')}
         </div>
       </div>
@@ -388,7 +416,7 @@
   }
 
   // Executes a student's code against the test cases.
-async function runCode(studentName, index) {
+async function runCode(studentName, index, assignmentId) {
   const resultsContainer = document.getElementById("results-output");
   // Show a loading indicator for test case execution.
   resultsContainer.innerHTML = `
@@ -402,7 +430,10 @@ async function runCode(studentName, index) {
     const runResponse = await fetch("/run_code", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ student_name: studentName })
+      body: JSON.stringify({ 
+        student_name: studentName,
+        assignment_id: assignmentId
+      })
     });
     if (!runResponse.ok) throw new Error(`HTTP error! status: ${runResponse.status}`);
     const runResult = await runResponse.json();
@@ -418,6 +449,32 @@ async function evaluateAllStudents() {
   const studentItems = document.querySelectorAll('li[data-student]');
   const resultsContainer = document.getElementById("results-output");
   
+  // Get assignment_id from global variable
+  const assignmentId = window.assignmentId;
+  
+  // Check if there are already graded students
+  const gradedStudents = document.querySelectorAll('[data-is-regrading="true"]').length;
+  
+  // If there are graded students, ask for confirmation to regrade them
+  if (gradedStudents > 0) {
+    const shouldRegrade = confirm(`${gradedStudents} student(s) have already been graded. Do you want to regrade them?\n\nClick 'OK' to regrade all students.\nClick 'Cancel' to only grade new submissions.`);
+    
+    if (!shouldRegrade) {
+      // Only process ungraded students
+      for (let li of studentItems) {
+        const gradeBtn = li.querySelector('.grade-student-btn');
+        if (gradeBtn && gradeBtn.getAttribute('data-is-regrading') !== 'true') {
+          const studentName = li.getAttribute('data-student');
+          const index = parseInt(gradeBtn.getAttribute('data-index'));
+          await gradeStudent(studentName, index, false);
+          // Small delay to avoid overwhelming the server
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+      return;
+    }
+  }
+  
   // Show main loading indicator.
   resultsContainer.innerHTML = `
     <div class="flex items-center justify-center h-32">
@@ -426,6 +483,7 @@ async function evaluateAllStudents() {
     </div>
   `;
   
+  // Original implementation for evaluating all students
   let index = 1;
   for (let li of studentItems) {
     const studentName = li.getAttribute('data-student');
@@ -443,18 +501,36 @@ async function evaluateAllStudents() {
       const evalResponse = await fetch("/evaluate_student", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ student_name: studentName })
+        body: JSON.stringify({ 
+          student_name: studentName,
+          assignment_id: assignmentId
+        })
       });
       if (!evalResponse.ok) throw new Error(`HTTP error! status: ${evalResponse.status}`);
       const evalResult = await evalResponse.json();
       
       // Run test cases using runCode.
-      const runResult = await runCode(studentName, index);
+      const runResult = await runCode(studentName, index, assignmentId);
       
       // Calculate final weighted score (50% AI, 50% test cases).
-      const aiScore = evalResult.scores.total || 0;
+      const aiScore = evalResult.scores ? (evalResult.scores.total || 0) : 0;
       const testScore = runResult.passed ? ((runResult.passed / (runResult.passed + runResult.failed)) * 100) : 0;
       const finalScore = Math.round((aiScore * 0.5) + (testScore * 0.5));
+      
+      // Merge the test case results into the evaluation result.
+      evalResult.test_results = runResult;
+      
+      // Save the combined results with final score to the database
+      await fetch("/save_grading_result", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          student_name: studentName,
+          assignment_id: assignmentId,
+          grading_result: evalResult,
+          final_score: finalScore
+        })
+      });
       
       // Update the displayed grade next to the student's name.
       const gradeEl = document.getElementById(`grade-${index}`);
@@ -475,7 +551,6 @@ async function evaluateAllStudents() {
       }
       
       // Merge the test case results into the evaluation result and cache it.
-      evalResult.test_results = runResult;
       evaluationCache[studentName] = evalResult;
       
       // Optionally, display the full combined details for the last evaluated student.
@@ -528,6 +603,103 @@ async function evaluateAllStudents() {
   }
 }
 
+// Grade or regrade an individual student
+async function gradeStudent(studentName, index, isRegrade) {
+  const resultsContainer = document.getElementById("results-output");
+  const statusEl = document.getElementById(`status-${index}`);
+  const gradeEl = document.getElementById(`grade-${index}`);
+  const gradeBtn = document.getElementById(`grade-btn-${index}`);
+  
+  // Get assignment_id from global variable
+  const assignmentId = window.assignmentId;
+  
+  // Update UI to show loading state
+  resultsContainer.innerHTML = `
+    <div class="flex items-center justify-center h-32 flex-col">
+      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-2"></div>
+      <span class="font-medium">${isRegrade ? 'Regrading' : 'Grading'} ${studentName}...</span>
+    </div>
+  `;
+  
+  try {
+    // Get AI evaluation from /evaluate_student API
+    const evalResponse = await fetch("/evaluate_student", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        student_name: studentName,
+        assignment_id: assignmentId
+      })
+    });
+    if (!evalResponse.ok) throw new Error(`HTTP error! status: ${evalResponse.status}`);
+    const evalResult = await evalResponse.json();
+    
+    // Run test cases using runCode
+    const runResult = await runCode(studentName, index, assignmentId);
+    
+    // Calculate final weighted score (50% AI, 50% test cases)
+    const aiScore = evalResult.scores ? (evalResult.scores.total || 0) : 0;
+    const testScore = runResult.passed ? ((runResult.passed / (runResult.passed + runResult.failed)) * 100) : 0;
+    const finalScore = Math.round((aiScore * 0.5) + (testScore * 0.5));
+    
+    // Merge the test case results into the evaluation result
+    evalResult.test_results = runResult;
+    
+    // Save the combined results with final score to the database
+    await fetch("/save_grading_result", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        student_name: studentName,
+        assignment_id: assignmentId,
+        grading_result: evalResult,
+        final_score: finalScore
+      })
+    });
+    
+    // Update the status indicators
+    statusEl.classList.remove("hidden");
+    if (finalScore >= 70) {
+      statusEl.className = "inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-600";
+      statusEl.innerHTML = "✓";
+    } else if (finalScore >= 50) {
+      statusEl.className = "inline-flex items-center justify-center w-6 h-6 rounded-full bg-yellow-100 text-yellow-600";
+      statusEl.innerHTML = "!";
+    } else {
+      statusEl.className = "inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-600";
+      statusEl.innerHTML = "✗";
+    }
+    
+    // Update grade text and button
+    gradeEl.textContent = `${finalScore}%`;
+    gradeBtn.textContent = "Regrade";
+    gradeBtn.className = "text-yellow-500 hover:text-yellow-700 hover:underline focus:outline-none transition-colors duration-300 grade-student-btn";
+    
+    // Update the data attributes for regrading
+    gradeBtn.setAttribute("data-is-regrading", "true");
+    
+    // Store in local cache
+    evaluationCache[studentName] = evalResult;
+    
+    // Display the combined results
+    displayCombinedResults(studentName, evalResult);
+    
+  } catch (error) {
+    console.error(`Error evaluating ${studentName}:`, error);
+    resultsContainer.innerHTML = `
+      <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mt-3">
+        <div class="flex">
+          <svg class="w-6 h-6 text-red-600 dark:text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <div>
+            <h3 class="text-red-800 dark:text-red-300 font-medium">Error During Evaluation</h3>
+            <div class="mt-1 text-red-700 dark:text-red-400">${error.message}</div>
+          </div>
+        </div>
+      </div>`;
+  }
+}
 
 // sidebar toggle functionality
 document.getElementById('toggle-sidebar').addEventListener('click', function () {
@@ -572,6 +744,34 @@ document.getElementById('toggle-sidebar').addEventListener('click', function () 
     this.classList.add('-translate-x-1/2');
     chevronIcon.style.transform = "rotate(0deg)";
   }
+});
+
+// Add event listeners for grade/regrade buttons
+document.addEventListener('DOMContentLoaded', function() {
+  // Get assignment_id from URL and store it globally
+  const urlParams = new URLSearchParams(window.location.search);
+  window.assignmentId = urlParams.get('assignment_id');
+  
+  // Update the UI to reflect we're viewing a specific assignment
+  if (window.assignmentId) {
+    document.title = `Grading: ${document.querySelector('.bg-blue-600 h2').textContent.trim()}`;
+    
+    // Show and configure the back button
+    const backButtonContainer = document.getElementById('back-button-container');
+    const backButton = backButtonContainer.querySelector('a');
+    backButtonContainer.classList.remove('hidden');
+    backButton.href = `/assignment/${window.assignmentId}`;
+  }
+  
+  document.querySelectorAll('.grade-student-btn').forEach(button => {
+    button.addEventListener('click', function() {
+      const studentName = this.getAttribute('data-name');
+      const index = parseInt(this.getAttribute('data-index'));
+      const isRegrading = this.getAttribute('data-is-regrading') === 'true';
+      
+      gradeStudent(studentName, index, isRegrading);
+    });
+  });
 });
 
 </script>

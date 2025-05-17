@@ -1,0 +1,430 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk Submissions - grAIder{% endblock %}
+
+{% block content %}
+<div class="p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
+  <!-- Back Button -->
+  <div class="mb-6">
+    <a href="{{ url_for('home') }}" class="inline-flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+      <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+      </svg>
+      Back to Assignments
+    </a>
+  </div>
+
+  <!-- Page Header -->
+  <div class="mb-8 text-center">
+    <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Bulk Submissions Management</h1>
+    <p class="mt-2 text-gray-600 dark:text-gray-300">Upload multiple student submissions at once or generate test data</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- Bulk Upload Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+      <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4 border-b pb-2">Upload Bulk Submissions</h2>
+      
+      <form id="bulkUploadForm" enctype="multipart/form-data">
+        <div class="mb-4">
+          <label for="assignment_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Select Assignment
+          </label>
+          <select
+            id="assignment_id"
+            name="assignment_id"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-black dark:text-white dark:bg-gray-700"
+            required
+          >
+            <option value="">Select an assignment</option>
+            {% for assignment in assignments %}
+              <option value="{{ assignment.id }}">{{ assignment.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        
+        <div class="mb-6">
+          <label for="submissions_zip" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Upload ZIP File
+          </label>
+          <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
+            <input 
+              type="file" 
+              id="submissions_zip" 
+              name="submissions_zip" 
+              accept=".zip"
+              class="hidden"
+              required
+            />
+            <label for="submissions_zip" class="cursor-pointer">
+              <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4h-8m-12 0H8m12 0a4 4 0 01-4-4v-4m0 0H8m0 0v-8m20 8v-8m0 0h-8m-4 8h12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                <span class="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400">Click to upload</span> or drag and drop
+              </p>
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-500">ZIP file containing student submissions</p>
+            </label>
+            <div id="file-name" class="mt-2 text-sm text-gray-500 dark:text-gray-400 hidden"></div>
+          </div>
+          <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+            The ZIP file should contain folders named after each student with their submission files inside.
+          </div>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            File Structure Options
+          </label>
+          <div class="space-y-2">
+            <div class="flex items-center">
+              <input
+                type="radio"
+                id="structure_student_folders"
+                name="file_structure"
+                value="student_folders"
+                class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                checked
+              />
+              <label for="structure_student_folders" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                Student folders (e.g., student_name/submission.py)
+              </label>
+            </div>
+            <div class="flex items-center">
+              <input
+                type="radio"
+                id="structure_filename_prefix"
+                name="file_structure"
+                value="filename_prefix"
+                class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+              />
+              <label for="structure_filename_prefix" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                Filename prefix (e.g., student_name_submission.py)
+              </label>
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <button
+            type="submit"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition"
+          >
+            Upload and Process
+          </button>
+        </div>
+      </form>
+      
+      <div id="upload-results" class="mt-4 hidden">
+        <h3 class="font-medium text-gray-800 dark:text-white mb-2">Upload Results</h3>
+        <div id="results-content" class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-sm max-h-60 overflow-y-auto"></div>
+      </div>
+    </div>
+    
+    <!-- Generate Test Data Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+      <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4 border-b pb-2">Generate Test Data</h2>
+      
+      <form id="generateDataForm">
+        <div class="mb-4">
+          <label for="test_assignment_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Select Assignment
+          </label>
+          <select
+            id="test_assignment_id"
+            name="test_assignment_id"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-black dark:text-white dark:bg-gray-700"
+            required
+          >
+            <option value="">Select an assignment</option>
+            {% for assignment in assignments %}
+              <option value="{{ assignment.id }}">{{ assignment.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        
+        <div class="mb-4">
+          <label for="student_count" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Number of Students
+          </label>
+          <input
+            type="number"
+            id="student_count"
+            name="student_count"
+            min="1"
+            max="50"
+            value="10"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-black dark:text-white dark:bg-gray-700"
+            required
+          />
+        </div>
+        
+        <div class="mb-4">
+          <label for="solution_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Solution Type
+          </label>
+          <select
+            id="solution_type"
+            name="solution_type"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-black dark:text-white dark:bg-gray-700"
+            required
+          >
+            <option value="mixed">Mixed (correct & incorrect)</option>
+            <option value="correct">All Correct</option>
+            <option value="incorrect">All Incorrect</option>
+          </select>
+        </div>
+        
+        <div class="mb-4">
+          <label for="output_format" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Output Format
+          </label>
+          <select
+            id="output_format"
+            name="output_format"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-black dark:text-white dark:bg-gray-700"
+            required
+          >
+            <option value="zip">ZIP File</option>
+            <option value="database">Direct to Database</option>
+          </select>
+        </div>
+        
+        <div>
+          <button
+            type="submit"
+            class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition"
+          >
+            Generate Test Data
+          </button>
+        </div>
+      </form>
+      
+      <div id="generate-results" class="mt-4 hidden">
+        <h3 class="font-medium text-gray-800 dark:text-white mb-2">Generation Results</h3>
+        <div id="generation-content" class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-sm max-h-60 overflow-y-auto"></div>
+        <div id="download-section" class="mt-3 hidden">
+          <a id="download-link" href="#" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+            </svg>
+            Download ZIP
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Status Message -->
+  <div id="status-message" class="fixed bottom-4 right-4 hidden"></div>
+</div>
+
+<script>
+  // File upload handling
+  const fileInput = document.getElementById('submissions_zip');
+  const fileNameDisplay = document.getElementById('file-name');
+  
+  fileInput.addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    if (file) {
+      fileNameDisplay.textContent = `Selected file: ${file.name}`;
+      fileNameDisplay.classList.remove('hidden');
+    } else {
+      fileNameDisplay.classList.add('hidden');
+    }
+  });
+  
+  // Drag and drop functionality
+  const dropZone = document.querySelector('.border-dashed');
+  
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+  });
+  
+  function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, highlight, false);
+  });
+  
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, unhighlight, false);
+  });
+  
+  function highlight() {
+    dropZone.classList.add('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20');
+  }
+  
+  function unhighlight() {
+    dropZone.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20');
+  }
+  
+  dropZone.addEventListener('drop', handleDrop, false);
+  
+  function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const file = dt.files[0];
+    fileInput.files = dt.files;
+    
+    if (file) {
+      fileNameDisplay.textContent = `Selected file: ${file.name}`;
+      fileNameDisplay.classList.remove('hidden');
+    }
+  }
+  
+  // Form submissions
+  document.getElementById('bulkUploadForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(this);
+    const resultsContainer = document.getElementById('upload-results');
+    const resultsContent = document.getElementById('results-content');
+    
+    resultsContainer.classList.remove('hidden');
+    resultsContent.innerHTML = `
+      <div class="flex items-center justify-center py-4">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span class="ml-2">Processing submissions...</span>
+      </div>
+    `;
+    
+    fetch('/bulk_upload', {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => {
+      if (!response.ok) {
+        return response.json().then(data => {
+          throw new Error(data.error || 'Error processing bulk upload');
+        });
+      }
+      return response.json();
+    })
+    .then(data => {
+      let content = `<div class="text-green-600 dark:text-green-400 font-medium mb-2">Successfully processed ${data.processed} submissions!</div>`;
+      
+      if (data.submissions && data.submissions.length > 0) {
+        content += '<ul class="list-disc list-inside space-y-1">';
+        data.submissions.forEach(sub => {
+          content += `<li>${sub.student_name}: ${sub.status}</li>`;
+        });
+        content += '</ul>';
+      }
+      
+      resultsContent.innerHTML = content;
+      showStatusMessage('Bulk upload completed successfully!', 'success');
+    })
+    .catch(error => {
+      resultsContent.innerHTML = `
+        <div class="text-red-600 dark:text-red-400">
+          <p class="font-medium">Error:</p>
+          <p>${error.message}</p>
+        </div>
+      `;
+      showStatusMessage('Error processing upload: ' + error.message, 'error');
+    });
+  });
+  
+  document.getElementById('generateDataForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(this);
+    const resultsContainer = document.getElementById('generate-results');
+    const resultsContent = document.getElementById('generation-content');
+    const downloadSection = document.getElementById('download-section');
+    
+    resultsContainer.classList.remove('hidden');
+    downloadSection.classList.add('hidden');
+    resultsContent.innerHTML = `
+      <div class="flex items-center justify-center py-4">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span class="ml-2">Generating test data...</span>
+      </div>
+    `;
+    
+    fetch('/generate_test_data', {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => {
+      if (!response.ok) {
+        return response.json().then(data => {
+          throw new Error(data.error || 'Error generating test data');
+        });
+      }
+      return response.json();
+    })
+    .then(data => {
+      let content = `<div class="text-green-600 dark:text-green-400 font-medium mb-2">Successfully generated ${data.count} test submissions!</div>`;
+      
+      if (data.output_format === 'zip' && data.file_url) {
+        content += `<p>ZIP file is ready for download.</p>`;
+        document.getElementById('download-link').href = data.file_url;
+        downloadSection.classList.remove('hidden');
+      } else {
+        content += `<p>Test data has been added directly to the database.</p>`;
+      }
+      
+      if (data.submissions && data.submissions.length > 0) {
+        content += '<ul class="list-disc list-inside space-y-1 mt-2">';
+        data.submissions.slice(0, 5).forEach(sub => {
+          content += `<li>${sub.student_name} ${sub.correct ? '✓' : '✗'}</li>`;
+        });
+        if (data.submissions.length > 5) {
+          content += `<li>... and ${data.submissions.length - 5} more</li>`;
+        }
+        content += '</ul>';
+      }
+      
+      resultsContent.innerHTML = content;
+      showStatusMessage('Test data generation completed!', 'success');
+    })
+    .catch(error => {
+      resultsContent.innerHTML = `
+        <div class="text-red-600 dark:text-red-400">
+          <p class="font-medium">Error:</p>
+          <p>${error.message}</p>
+        </div>
+      `;
+      showStatusMessage('Error generating test data: ' + error.message, 'error');
+    });
+  });
+  
+  // Status message display
+  function showStatusMessage(message, type) {
+    const messageDiv = document.getElementById('status-message');
+    
+    // Set styling based on message type
+    let bgColor, textColor;
+    switch (type) {
+      case 'success':
+        bgColor = 'bg-green-500';
+        textColor = 'text-white';
+        break;
+      case 'error':
+        bgColor = 'bg-red-500';
+        textColor = 'text-white';
+        break;
+      default:
+        bgColor = 'bg-gray-700';
+        textColor = 'text-white';
+    }
+    
+    messageDiv.className = `fixed bottom-4 right-4 ${bgColor} ${textColor} px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-500`;
+    messageDiv.textContent = message;
+    messageDiv.classList.remove('hidden');
+    
+    // Hide message after 3 seconds
+    setTimeout(() => {
+      messageDiv.classList.add('opacity-0');
+      setTimeout(() => {
+        messageDiv.classList.add('hidden');
+        messageDiv.classList.remove('opacity-0');
+      }, 500);
+    }, 3000);
+  }
+</script>
+{% endblock %} 
