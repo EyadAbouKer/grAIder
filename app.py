@@ -1129,6 +1129,27 @@ def generate_test_cases():
     except Exception as e:
         return jsonify({"error": f"Error generating test cases: {str(e)}"}), 500
 
+@app.route("/delete_submission/<int:submission_id>", methods=["DELETE"])
+def delete_submission(submission_id):
+    submission = Submission.query.get_or_404(submission_id)
+    
+    # Store file path if we need to delete the file too
+    file_path = submission.file_path
+    
+    # Delete from database
+    db.session.delete(submission)
+    db.session.commit()
+    
+    # Delete the associated file if it exists
+    if file_path and os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+        except Exception as e:
+            # Continue even if file deletion fails
+            print(f"Warning: Could not delete file {file_path}: {str(e)}")
+    
+    return jsonify({"message": "Submission deleted successfully"}), 200
+
 if __name__ == "__main__":
     with app.app_context():
         create_tables()

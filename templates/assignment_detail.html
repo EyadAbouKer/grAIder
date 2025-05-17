@@ -238,11 +238,18 @@
                       {% endif %}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                      <button 
-                        class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                        onclick="viewSubmission('{{ submission.id }}')">
-                        View
-                      </button>
+                      <div class="flex space-x-3">
+                        <button 
+                          class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                          onclick="viewSubmission('{{ submission.id }}')">
+                          View
+                        </button>
+                        <button 
+                          class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                          onclick="deleteSubmission('{{ submission.id }}')">
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 {% endfor %}
@@ -581,6 +588,40 @@
       showMessage("Submission graded successfully!", "success");
       
       // Refresh the page to show updated grades
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    })
+    .catch(error => {
+      showMessage(`Error: ${error.message}`, "error");
+    });
+  }
+  
+  // Delete submission
+  function deleteSubmission(submissionId) {
+    // Show confirmation dialog
+    if (!confirm("Are you sure you want to delete this submission? This action cannot be undone.")) {
+      return; // User cancelled
+    }
+    
+    // Show loading message
+    showMessage("Deleting submission...", "info");
+    
+    fetch(`/delete_submission/${submissionId}`, {
+      method: "DELETE"
+    })
+    .then(response => {
+      if (!response.ok) {
+        return response.json().then(data => {
+          throw new Error(data.error || "Error deleting submission");
+        });
+      }
+      return response.json();
+    })
+    .then(data => {
+      showMessage("Submission deleted successfully!", "success");
+      
+      // Refresh the page to update the submission list
       setTimeout(() => {
         window.location.reload();
       }, 1500);
