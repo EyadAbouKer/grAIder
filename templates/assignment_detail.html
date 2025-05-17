@@ -73,8 +73,20 @@
       </div>
 
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4 border-b pb-2">Rubric</h2>
-        {% if assignment.rubric %}
+        <div class="flex justify-between items-center mb-4 border-b pb-2">
+          <h2 class="text-xl font-bold text-gray-800 dark:text-white">Rubric</h2>
+          <button 
+            id="editRubricBtn" 
+            class="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium"
+            type="button"
+          >
+            <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+            </svg>
+            Edit
+          </button>
+        </div>
+        <div id="rubricDisplay" class="{% if not assignment.rubric %}hidden{% endif %}">
           <ul class="space-y-2">
             {% for criterion, points in assignment.rubric.items() %}
               <li class="flex justify-between">
@@ -83,9 +95,76 @@
               </li>
             {% endfor %}
           </ul>
-        {% else %}
+        </div>
+        <div id="noRubricMessage" class="{% if assignment.rubric %}hidden{% endif %}">
           <p class="text-gray-500 dark:text-gray-400">No rubric defined for this assignment.</p>
-        {% endif %}
+        </div>
+        
+        <!-- Rubric Editor Form -->
+        <div id="rubricForm" class="hidden mt-4">
+          <div id="rubricItems" class="space-y-3">
+            {% if assignment.rubric %}
+              {% for criterion, points in assignment.rubric.items() %}
+                <div class="rubric-item flex items-center space-x-2">
+                  <input 
+                    type="text" 
+                    class="criterion-input flex-grow px-2 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-black dark:text-white dark:bg-gray-700"
+                    value="{{ criterion }}"
+                  />
+                  <input 
+                    type="number" 
+                    class="percentage-input w-16 px-2 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-black dark:text-white dark:bg-gray-700"
+                    value="{{ points }}"
+                    min="0"
+                    max="100"
+                  />
+                  <span class="text-gray-700 dark:text-gray-300">%</span>
+                  <button type="button" class="remove-criterion text-red-500 hover:text-red-700">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                  </button>
+                </div>
+              {% endfor %}
+            {% endif %}
+          </div>
+          
+          <div class="flex items-center justify-between mt-4 border-t pt-3">
+            <div>
+              <button 
+                id="addCriterionBtn"
+                type="button"
+                class="flex items-center text-green-600 hover:text-green-700 dark:text-green-500 dark:hover:text-green-400 text-sm font-medium"
+              >
+                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                Add Criterion
+              </button>
+            </div>
+            <div class="text-right">
+              <span class="text-sm mr-2">Total: <span id="totalPercentage">100</span>%</span>
+              <span id="percentageWarning" class="text-red-500 text-sm hidden">Must equal 100%</span>
+            </div>
+          </div>
+          
+          <div class="flex justify-end mt-3 space-x-2">
+            <button 
+              id="cancelRubricBtn"
+              type="button"
+              class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-white text-sm font-medium py-2 px-4 rounded-lg"
+            >
+              Cancel
+            </button>
+            <button 
+              id="saveRubricBtn"
+              type="button"
+              class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-lg"
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -599,6 +678,262 @@
     .catch(error => {
       showMessage(`Error: ${error.message}`, "error");
     });
+  });
+
+  // Rubric editing functionality
+  document.addEventListener("DOMContentLoaded", function() {
+    const editRubricBtn = document.getElementById("editRubricBtn");
+    const rubricDisplay = document.getElementById("rubricDisplay");
+    const noRubricMessage = document.getElementById("noRubricMessage");
+    const rubricForm = document.getElementById("rubricForm");
+    const rubricItems = document.getElementById("rubricItems");
+    const addCriterionBtn = document.getElementById("addCriterionBtn");
+    const cancelRubricBtn = document.getElementById("cancelRubricBtn");
+    const saveRubricBtn = document.getElementById("saveRubricBtn");
+    const totalPercentage = document.getElementById("totalPercentage");
+    const percentageWarning = document.getElementById("percentageWarning");
+    
+    // Log elements to check if they're found
+    console.log("Edit button:", editRubricBtn);
+    console.log("Rubric form:", rubricForm);
+    
+    // Show edit form for rubric
+    if (editRubricBtn) {
+      editRubricBtn.addEventListener("click", function() {
+        console.log("Edit button clicked");
+        rubricDisplay.classList.add("hidden");
+        noRubricMessage.classList.add("hidden");
+        rubricForm.classList.remove("hidden");
+        updateTotalPercentage();
+      });
+    }
+    
+    // Cancel rubric editing
+    if (cancelRubricBtn) {
+      cancelRubricBtn.addEventListener("click", function() {
+        rubricForm.classList.add("hidden");
+        
+        if ({{ 'true' if assignment.rubric else 'false' }}) {
+          rubricDisplay.classList.remove("hidden");
+        } else {
+          noRubricMessage.classList.remove("hidden");
+        }
+        
+        // Reset form to original rubric items
+        refreshRubricItems();
+      });
+    }
+    
+    // Add a new criterion
+    if (addCriterionBtn) {
+      addCriterionBtn.addEventListener("click", function() {
+        const newItem = document.createElement("div");
+        newItem.className = "rubric-item flex items-center space-x-2";
+        newItem.innerHTML = `
+          <input 
+            type="text" 
+            class="criterion-input flex-grow px-2 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-black dark:text-white dark:bg-gray-700"
+            value="New Criterion"
+          />
+          <input 
+            type="number" 
+            class="percentage-input w-16 px-2 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-black dark:text-white dark:bg-gray-700"
+            value="0"
+            min="0"
+            max="100"
+          />
+          <span class="text-gray-700 dark:text-gray-300">%</span>
+          <button type="button" class="remove-criterion text-red-500 hover:text-red-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+          </button>
+        `;
+        
+        rubricItems.appendChild(newItem);
+        
+        // Add event listeners to new elements
+        setupRubricItemListeners(newItem);
+        updateTotalPercentage();
+      });
+    }
+    
+    // Setup rubric item listeners
+    function setupRubricItemListeners(item) {
+      // Listen for percentage changes
+      const percentageInput = item.querySelector(".percentage-input");
+      if (percentageInput) {
+        percentageInput.addEventListener("input", updateTotalPercentage);
+      }
+      
+      // Listen for remove button clicks
+      const removeBtn = item.querySelector(".remove-criterion");
+      if (removeBtn) {
+        removeBtn.addEventListener("click", function(e) {
+          e.preventDefault();
+          item.remove();
+          updateTotalPercentage();
+        });
+      }
+    }
+    
+    // Initialize event listeners for existing rubric items
+    document.querySelectorAll(".rubric-item").forEach(setupRubricItemListeners);
+    
+    // Calculate and update the total percentage
+    function updateTotalPercentage() {
+      const percentages = [...document.querySelectorAll(".percentage-input")].map(input => 
+        parseInt(input.value) || 0
+      );
+      
+      const total = percentages.reduce((sum, val) => sum + val, 0);
+      totalPercentage.textContent = total;
+      
+      // Show warning if total is not 100%
+      if (total !== 100) {
+        percentageWarning.classList.remove("hidden");
+        saveRubricBtn.disabled = true;
+        saveRubricBtn.classList.add("opacity-50", "cursor-not-allowed");
+      } else {
+        percentageWarning.classList.add("hidden");
+        saveRubricBtn.disabled = false;
+        saveRubricBtn.classList.remove("opacity-50", "cursor-not-allowed");
+      }
+    }
+    
+    // Refresh rubric items to match the original
+    function refreshRubricItems() {
+      // Clear existing items
+      rubricItems.innerHTML = "";
+      
+      try {
+        // Get the current rubric from the display
+        const currentRubricItems = [];
+        const displayItems = document.querySelectorAll("#rubricDisplay li");
+        
+        if (displayItems && displayItems.length > 0) {
+          displayItems.forEach(li => {
+            const criterion = li.querySelector("span:first-child").textContent.trim();
+            const points = parseInt(li.querySelector("span:last-child").textContent) || 0;
+            currentRubricItems.push({ criterion, points });
+          });
+        } else {
+          // Fallback to template values
+          {% if assignment.rubric %}
+            {% for criterion, points in assignment.rubric.items() %}
+              currentRubricItems.push({ 
+                criterion: "{{ criterion }}", 
+                points: {{ points }} 
+              });
+            {% endfor %}
+          {% endif %}
+        }
+        
+        // Recreate the items
+        currentRubricItems.forEach(item => {
+          const newItem = document.createElement("div");
+          newItem.className = "rubric-item flex items-center space-x-2";
+          newItem.innerHTML = `
+            <input 
+              type="text" 
+              class="criterion-input flex-grow px-2 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-black dark:text-white dark:bg-gray-700"
+              value="${item.criterion}"
+            />
+            <input 
+              type="number" 
+              class="percentage-input w-16 px-2 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-black dark:text-white dark:bg-gray-700"
+              value="${item.points}"
+              min="0"
+              max="100"
+            />
+            <span class="text-gray-700 dark:text-gray-300">%</span>
+            <button type="button" class="remove-criterion text-red-500 hover:text-red-700">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+              </svg>
+            </button>
+          `;
+          rubricItems.appendChild(newItem);
+          setupRubricItemListeners(newItem);
+        });
+      } catch (error) {
+        console.error("Error refreshing rubric items:", error);
+      }
+    }
+    
+    // Save rubric changes
+    if (saveRubricBtn) {
+      saveRubricBtn.addEventListener("click", function() {
+        // Collect all criteria and percentages
+        const newRubric = {};
+        const items = document.querySelectorAll(".rubric-item");
+        
+        items.forEach(item => {
+          const criterion = item.querySelector(".criterion-input").value.trim();
+          const percentage = parseInt(item.querySelector(".percentage-input").value) || 0;
+          
+          // Skip empty criteria
+          if (criterion) {
+            newRubric[criterion] = percentage;
+          }
+        });
+        
+        // Calculate total to double-check
+        const total = Object.values(newRubric).reduce((sum, val) => sum + val, 0);
+        if (total !== 100) {
+          showMessage("Rubric percentages must add up to 100%", "error");
+          return;
+        }
+        
+        // Send to server
+        fetch("/update_assignment_rubric", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            assignment_id: {{ assignment.id }},
+            rubric: newRubric
+          })
+        })
+        .then(response => {
+          if (!response.ok) {
+            return response.json().then(data => {
+              throw new Error(data.error || "Error updating rubric");
+            });
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Update UI
+          rubricForm.classList.add("hidden");
+          rubricDisplay.classList.remove("hidden");
+          noRubricMessage.classList.add("hidden");
+          
+          // Rebuild the display list
+          const displayList = rubricDisplay.querySelector("ul");
+          displayList.innerHTML = "";
+          
+          for (const [criterion, points] of Object.entries(newRubric)) {
+            const li = document.createElement("li");
+            li.className = "flex justify-between";
+            li.innerHTML = `
+              <span class="text-gray-700 dark:text-gray-300">${criterion}</span>
+              <span class="font-semibold text-gray-900 dark:text-white">${points}%</span>
+            `;
+            displayList.appendChild(li);
+          }
+          
+          showMessage("Rubric updated successfully", "success");
+          
+          // Refresh the page after a short delay to ensure consistent state
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        })
+        .catch(error => {
+          showMessage(`Error: ${error.message}`, "error");
+        });
+      });
+    }
   });
 </script>
 {% endblock %} 

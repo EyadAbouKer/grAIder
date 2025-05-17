@@ -14,12 +14,14 @@ import zipfile
 import tempfile
 import shutil
 import random
+from flask_cors import CORS
 
 
 load_dotenv()  # Load environment variables from .env file
 api_key = os.getenv('GEMINI_API_KEY')
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///Student.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -1044,6 +1046,31 @@ def update_assignment_description():
     db.session.commit()
     
     return jsonify({"message": "Assignment description updated successfully"}), 200
+
+@app.route("/update_assignment_rubric", methods=["POST"])
+def update_assignment_rubric():
+    data = request.get_json()
+    assignment_id = data.get("assignment_id")
+    rubric = data.get("rubric")
+    
+    if not assignment_id or not rubric:
+        return jsonify({"error": "Assignment ID and rubric are required"}), 400
+    
+    # Get the assignment
+    assignment = Assignment.query.get(assignment_id)
+    if not assignment:
+        return jsonify({"error": "Assignment not found"}), 404
+    
+    # Validate the rubric structure and ensure percentages add up to 100
+    total_percentage = sum(points for points in rubric.values())
+    if total_percentage != 100:
+        return jsonify({"error": f"Rubric percentages must sum to 100% (currently {total_percentage}%)"}), 400
+    
+    # Update the rubric
+    assignment.rubric = rubric
+    db.session.commit()
+    
+    return jsonify({"message": "Assignment rubric updated successfully"}), 200
 
 @app.route("/generate_test_cases", methods=["POST"])
 def generate_test_cases():
