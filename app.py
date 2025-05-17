@@ -72,19 +72,19 @@ def create_tables():
     return "All students deleted from the database!"
 
 # TODO: to be removed after testing, and replaced with a dynamic test case generator or a test case file
-test_cases = [
-        {"input": "[]", "expected": 0},
-        {"input": "[1, 3, 5]", "expected": 0},
-        {"input": "[2, 4, 6]", "expected": 12},
-        {"input": "[1, 2, 3, 4, 5, 6]", "expected": 12},
-        {"input": "[-2, -3, 4]", "expected": 2},
-        {"input": "[0, 1, 2, 3]", "expected": 2},
-        {"input": "[10]", "expected": 10},
-        {"input": "[7]", "expected": 0},
-        {"input": "[1, -2, -4, 3, 0]", "expected": -6},
-        {"input": "[100, 101, 102]", "expected": 202}
-    ]
-
+# test_cases = [
+#         {"input": "[]", "expected": 0},
+#         {"input": "[1, 3, 5]", "expected": 0},
+#         {"input": "[2, 4, 6]", "expected": 12},
+#         {"input": "[1, 2, 3, 4, 5, 6]", "expected": 12},
+#         {"input": "[-2, -3, 4]", "expected": 2},
+#         {"input": "[0, 1, 2, 3]", "expected": 2},
+#         {"input": "[10]", "expected": 10},
+#         {"input": "[7]", "expected": 0},
+#         {"input": "[1, -2, -4, 3, 0]", "expected": -6},
+#         {"input": "[100, 101, 102]", "expected": 202}
+#     ]
+test_cases = []
 @app.route("/")
 def home():
     assignments = Assignment.query.all()
@@ -334,6 +334,7 @@ def run_code():
     data = request.json
     student_name = data.get("student_name")
     assignment_id = data.get("assignment_id")  # Optional parameter
+    custom_test_cases = data.get("test_cases")  # Check for custom test cases from frontend
 
     # Try both Student and Submission objects
     solution = None
@@ -358,18 +359,8 @@ def run_code():
     if not solution:
         return jsonify({"error": f"No solution found for '{student_name}'"}), 404
 
-    test_cases = [
-        {"input": "[]", "expected": 0},
-        {"input": "[1, 3, 5]", "expected": 0},
-        {"input": "[2, 4, 6]", "expected": 12},
-        {"input": "[1, 2, 3, 4, 5, 6]", "expected": 12},
-        {"input": "[-2, -3, 4]", "expected": 2},
-        {"input": "[0, 1, 2, 3]", "expected": 2},
-        {"input": "[10]", "expected": 10},
-        {"input": "[7]", "expected": 0},
-        {"input": "[1, -2, -4, 3, 0]", "expected": -6},
-        {"input": "[100, 101, 102]", "expected": 202}
-    ]
+    # Use custom test cases if provided, otherwise use the global test_cases
+    current_test_cases = custom_test_cases if custom_test_cases else test_cases
 
     results = {"passed": 0, "failed": 0, "details": []}
 
@@ -385,7 +376,7 @@ def run_code():
 
         function = exec_globals[function_name]
 
-        for test_case in test_cases:
+        for test_case in current_test_cases:
             input_data = ast.literal_eval(test_case["input"])
             expected_output = test_case["expected"]
             
@@ -415,7 +406,7 @@ def run_code():
                 })
 
     except Exception as e:
-        results["failed"] = len(test_cases)
+        results["failed"] = len(current_test_cases)
         results["details"] = [{"input": "N/A", "status": "Error", "error": str(e)}]
 
     return jsonify(results)
@@ -1033,6 +1024,63 @@ def save_grading_result():
         db.session.commit()
     
     return jsonify({"message": "Grading result saved successfully"})
+
+@app.route("/generate_test_cases", methods=["POST"])
+def generate_test_cases():
+    data = request.get_json()
+    assignment_id = data.get("assignment_id")
+    
+    if not assignment_id:
+        return jsonify({"error": "Assignment ID is required"}), 400
+    
+    # Get the assignment
+    assignment = Assignment.query.get(assignment_id)
+    if not assignment:
+        return jsonify({"error": "Assignment not found"}), 404
+    
+    # Create prompt for the AI to generate test cases based on the assignment
+    prompt = f"""
+    Assignment: {assignment.name}
+    Description: {assignment.description}
+    
+    Generate 10 comprehensive test cases for this programming assignment. 
+    Each test case should include an input value and the expected output.
+    The test cases should cover various scenarios including edge cases.
+    
+    Return ONLY a JSON array in this exact format:
+    [
+      {{"input": "<input value>", "expected": <expected output>}},
+      ...
+    ]
+    
+    Do not include any markdown formatting, explanations, or other text outside the JSON array.
+    """
+    
+    try:
+        # Query Gemini API to generate test cases
+        response = query_gemini(prompt, api_key)
+        
+        # Clean up response (remove any markdown code fences)
+        cleaned_response = response.strip()
+        if cleaned_response.startswith("```json"):
+            cleaned_response = cleaned_response[len("```json"):].strip()
+        if cleaned_response.endswith("```"):
+            cleaned_response = cleaned_response[:-3].strip()
+        
+        # Parse JSON response
+        generated_test_cases = json.loads(cleaned_response)
+        
+        # Update the global test_cases variable in app.py (this is what the user requested)
+        global test_cases
+        test_cases = generated_test_cases
+        
+        # Return the generated test cases to the client
+        return jsonify({"test_cases": generated_test_cases}), 200
+        
+    except json.JSONDecodeError as e:
+        return jsonify({"error": f"Failed to parse generated test cases: {str(e)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Error generating test cases: {str(e)}"}), 500
 
 if __name__ == "__main__":
     with app.app_context():
