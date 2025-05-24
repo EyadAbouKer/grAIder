@@ -47,6 +47,7 @@ class Assignment(db.Model):
     description = db.Column(db.Text, nullable=False)
     course = db.Column(db.String(100))
     weight = db.Column(db.Integer, default=100)
+    subject = db.Column(db.String(100))
     rubric = db.Column(db.JSON)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     
@@ -111,6 +112,7 @@ def add_assignment():
     description = data.get("description")
     course = data.get("course", "")
     weight = data.get("weight", 100)
+    subject = data.get("subject", "NA")
     
     if not name or not description:
         return jsonify({"error": "Name and description are required"}), 400
@@ -128,6 +130,7 @@ def add_assignment():
         description=description,
         course=course,
         weight=weight,
+        subject=subject,
         rubric=default_rubric # rubric is a json object that is added to the assignment object
     )
     
